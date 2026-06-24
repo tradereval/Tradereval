@@ -3,32 +3,50 @@ import { SIM_CONFIG } from "../data/simulation.js";
 import { loadState, saveState, resetEval } from "../store.js";
 import { wishlistBannerHtml, wireWishlistButtons } from "../wishlist.js";
 import { getTotalWindows } from "../ai/session.js";
+import {
+  loadAuth,
+  isLoggedIn,
+  openAuthModal,
+  consumeEvalCredit,
+  checkEvalCredit,
+} from "../auth.js";
 
 export async function renderDashboard(container, { navigate }, waitlistCount = null) {
   const state = loadState();
-  const totalWindows = getTotalWindows(state) || 9;
+  const auth = loadAuth();
+  const totalWindows = getTotalWindows(state) || 6;
   const progress = state.evalComplete
     ? 100
     : Math.round((state.currentWindowIdx / totalWindows) * 100);
+  const credits = auth?.user?.evalCredits ?? 0;
 
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">AI-powered · No funding · No prop firm</p>
+        <p class="eyebrow">AI-powered · Every run is unique</p>
         <h1>Trade the simulation.<br/>AI builds every scenario.</h1>
         <p class="lead">
-          <strong>AI generates</strong> your trades, quiz questions, and coaching report — nothing to update manually.
-          Each run is a new ${SIM_CONFIG.totalDays}-day XAUUSD story. You click; AI evaluates behavior.
+          <strong>Why AI?</strong> Same static setups get memorized — useless for real growth.
+          Our AI creates <strong>new trades, quizzes, and charts every evaluation</strong> so you practice real decisions, not answers you remember.
         </p>
+        ${
+          !isLoggedIn()
+            ? `<p class="signup-note">Free sign up required · <strong>1 free AI evaluation per email</strong></p>`
+            : `<p class="signup-note">Signed in as <strong>${auth.user.email}</strong> · Free evals left: <strong>${credits}</strong></p>`
+        }
         <div class="hero-actions">
           ${
-            state.evalComplete
-              ? `<button class="btn primary" data-action="report">View your report</button>
-                 <button class="btn ghost" data-action="restart">Start fresh evaluation</button>`
-              : state.evalStarted
-                ? `<button class="btn primary" data-action="continue">Continue Day ${state.currentDay}</button>
-                   <button class="btn ghost" data-action="restart">Reset</button>`
-                : `<button class="btn primary" data-action="start">Start free evaluation</button>`
+            !isLoggedIn()
+              ? `<button class="btn primary" data-action="signup">Sign up free — get 1 eval</button>
+                 <button class="btn ghost" data-action="login">Sign in</button>`
+              : state.evalComplete
+                ? `<button class="btn primary" data-action="report">View your report</button>
+                   ${credits > 0 ? `<button class="btn ghost" data-action="start">Use another free eval</button>` : `<button class="btn ghost" data-open-wishlist="dashboard">Join waitlist for more</button>`}`
+                : state.evalStarted
+                  ? `<button class="btn primary" data-action="continue">Continue Day ${state.currentDay}</button>`
+                  : credits > 0
+                    ? `<button class="btn primary" data-action="start">Start your free evaluation</button>`
+                    : `<button class="btn primary" data-open-wishlist="dashboard">No evals left — join waitlist</button>`
           }
         </div>
       </div>
@@ -42,10 +60,10 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
           <div class="progress-label">${progress}%</div>
         </div>
         <ul class="stat-list">
-          <li><span>Program</span><strong>${SIM_CONFIG.totalDays} / ${SIM_CONFIG.fullProgramDays} days (demo)</strong></li>
+          <li><span>Account</span><strong>${isLoggedIn() ? "Active" : "Sign up required"}</strong></li>
+          <li><span>Free evals left</span><strong>${isLoggedIn() ? credits : "1 on signup"}</strong></li>
           <li><span>Decisions logged</span><strong>${state.actionLog.length}</strong></li>
           <li><span>Sim P&amp;L</span><strong class="${state.simPnlR >= 0 ? "pos" : "neg"}">${state.simPnlR >= 0 ? "+" : ""}${state.simPnlR.toFixed(1)}R</strong></li>
-          <li><span>Launch</span><strong class="muted">Waitlist open · Stripe later</strong></li>
         </ul>
       </div>
     </section>
@@ -54,43 +72,67 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
 
     <section class="grid-3">
       <article class="card">
-        <h3>AI-generated</h3>
-        <p>New scenarios, Q&amp;A, and reports every time — you never edit content by hand.</p>
+        <h3>Never the same twice</h3>
+        <p>AI generates fresh market situations every time — traders can't cheat by memorizing.</p>
       </article>
       <article class="card">
-        <h3>Continuous price</h3>
-        <p>One XAUUSD story across the month. Context from Day 5 still matters on Day 22.</p>
+        <h3>Trades + Q&amp;A</h3>
+        <p>Click real decisions on charts, answer judgment questions — AI scores behavior.</p>
       </article>
       <article class="card">
-        <h3>Trader identity report</h3>
-        <p>Archetype, weak moments, dimension scores, and 3 fixes for the next 30 days.</p>
+        <h3>AI coaching report</h3>
+        <p>Personalized mistakes and fixes — no manual content updates from us.</p>
       </article>
-    </section>
-
-    <section class="card setup-note">
-      <h3>Before we launch publicly</h3>
-      <p>Join the waitlist if you want the full 30-day product. We use signups to measure interest before adding Stripe and your domain. No payment required now.</p>
     </section>
   `;
 
   wireWishlistButtons(container);
-  container.querySelector('[data-action="start"]')?.addEventListener("click", () => {
+
+  container.querySelector('[data-action="signup"]')?.addEventListener("click", () => {
+    openAuthModal("signup", () => navigate("dashboard"));
+  });
+  container.querySelector('[data-action="login"]')?.addEventListener("click", () => {
+    openAuthModal("login", () => navigate("dashboard"));
+  });
+  container.querySelector('[data-action="start"]')?.addEventListener("click", () =>
+    startEvaluation(navigate)
+  );
+  container.querySelector('[data-action="continue"]')?.addEventListener("click", () =>
+    navigate("evaluation")
+  );
+  container.querySelector('[data-action="report"]')?.addEventListener("click", () =>
+    navigate("report")
+  );
+}
+
+export async function startEvaluation(navigate) {
+  if (!isLoggedIn()) {
+    openAuthModal("signup", () => startEvaluation(navigate));
+    return;
+  }
+
+  const state = loadState();
+  if (state.evalStarted && !state.evalComplete && state.evalCreditConsumed) {
+    navigate("evaluation");
+    return;
+  }
+
+  try {
+    if (!state.evalCreditConsumed) {
+      await consumeEvalCredit();
+    }
     resetEval();
     const s = loadState();
     s.evalStarted = true;
+    s.evalCreditConsumed = true;
     s.profile.startedAt = new Date().toISOString();
     saveState(s);
     navigate("evaluation");
-  });
-
-  container.querySelector('[data-action="continue"]')?.addEventListener("click", () => navigate("evaluation"));
-  container.querySelector('[data-action="report"]')?.addEventListener("click", () => navigate("report"));
-  container.querySelector('[data-action="restart"]')?.addEventListener("click", () => {
-    if (confirm("Reset your evaluation progress?")) {
-      resetEval();
-      navigate("dashboard");
-    }
-  });
+  } catch (err) {
+    alert(err.message);
+    await checkEvalCredit();
+    navigate("dashboard");
+  }
 }
 
 export function renderProfile(container) {
@@ -102,32 +144,32 @@ export function renderProfile(container) {
   container.innerHTML = `
     <section class="card">
       <h2>Trader Profile</h2>
-      <p class="muted">Built from your actions in the simulation — not from quiz answers.</p>
+      <p class="muted">Built from your actions in the simulation.</p>
       ${
         report
           ? `<div class="profile-header">
               <div class="score-big">${overall}</div>
               <div>
                 <span class="grade-pill ${grade.class}">${grade.label}</span>
-                <h3>${report.archetype.name}</h3>
-                <p>${report.archetype.summary}</p>
+                <h3>${report.archetype?.name || "Trader"}</h3>
+                <p>${report.archetype?.summary || ""}</p>
               </div>
             </div>
             <div class="dim-grid">
-              ${DIMENSIONS.filter((d) => d.id !== "journaling" || report.map.journaling > 0)
+              ${DIMENSIONS.filter((d) => d.id !== "journaling" || report.map?.journaling > 0)
                 .map((d) => {
-                  const sc = report.map[d.id] ?? "—";
+                  const sc = report.map?.[d.id] ?? "—";
                   return `<div class="dim-row"><span>${d.name}</span><div class="bar-track"><div class="bar-fill" style="width:${sc}%;background:${d.color}"></div></div><strong>${sc}</strong></div>`;
                 })
                 .join("")}
             </div>`
-          : `<p class="empty">Complete the evaluation to unlock your profile.</p>
+          : `<p class="empty">Complete an evaluation to unlock your profile.</p>
              <button class="btn primary" id="go-eval">Start evaluation</button>`
       }
     </section>
   `;
 
   container.querySelector("#go-eval")?.addEventListener("click", () => {
-    window.__navigate("evaluation");
+    startEvaluation(window.__navigate);
   });
 }

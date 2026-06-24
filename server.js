@@ -76,6 +76,18 @@ function createVercelRes(nodeRes) {
 
 const generateSession = require("./api/generate-session");
 const evaluateSession = require("./api/evaluate-session");
+const authSignup = require("./api/auth/signup");
+const authLogin = require("./api/auth/login");
+const authMe = require("./api/auth/me");
+const evalConsume = require("./api/eval/consume");
+
+const API_POST = {
+  "/api/generate-session": generateSession,
+  "/api/evaluate-session": evaluateSession,
+  "/api/auth/signup": authSignup,
+  "/api/auth/login": authLogin,
+  "/api/eval/consume": evalConsume,
+};
 
 http
   .createServer(async (req, res) => {
@@ -85,20 +97,25 @@ http
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
       });
       res.end();
       return;
     }
 
-    if (
-      (urlPath === "/api/generate-session" || urlPath === "/api/evaluate-session") &&
-      req.method === "POST"
-    ) {
+    if (API_POST[urlPath] && req.method === "POST") {
       try {
         req.body = await readBody(req);
-        const handler = urlPath === "/api/generate-session" ? generateSession : evaluateSession;
-        await handler(req, createVercelRes(res));
+        await API_POST[urlPath](req, createVercelRes(res));
+      } catch (err) {
+        sendJson(res, 500, { error: err.message });
+      }
+      return;
+    }
+
+    if (urlPath === "/api/auth/me" && req.method === "GET") {
+      try {
+        await authMe(req, createVercelRes(res));
       } catch (err) {
         sendJson(res, 500, { error: err.message });
       }

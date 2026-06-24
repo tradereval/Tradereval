@@ -2,6 +2,7 @@ import { loadState, saveState, resetEval } from "../store.js";
 import { drawChart } from "../sim/chart.js";
 import { recordAction, generateReport } from "../sim/scoring.js";
 import { hasJoinedWishlist, wireWishlistButtons } from "../wishlist.js";
+import { isLoggedIn } from "../auth.js";
 import { generateAiSession, evaluateAiSession } from "../ai/client.js";
 import {
   getSession,
@@ -12,6 +13,11 @@ import {
 } from "../ai/session.js";
 
 export async function renderEvaluation(container, { navigate }) {
+  if (!isLoggedIn()) {
+    navigate("dashboard");
+    return;
+  }
+
   const state = loadState();
 
   if (state.evalComplete) {

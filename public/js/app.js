@@ -1,5 +1,5 @@
 import { loadState, saveState } from "./store.js";
-import { renderDashboard, renderProfile } from "./views/dashboard.js";
+import { renderDashboard, renderProfile, startEvaluation } from "./views/dashboard.js";
 import { renderEvaluation, renderReport } from "./views/evaluation.js";
 import { renderComingSoon } from "./views/placeholder.js";
 import { gradeForScore } from "./data/dimensions.js";
@@ -8,6 +8,7 @@ import {
   openWishlistModal,
   refreshTopbarWaitlist,
 } from "./wishlist.js";
+import { loadAuth, isLoggedIn, openAuthModal, logout, refreshUser } from "./auth.js";
 
 const TITLES = {
   dashboard: "Dashboard",
@@ -26,6 +27,11 @@ const sidebar = document.getElementById("sidebar");
 const menuToggle = document.getElementById("menu-toggle");
 
 async function navigate(view) {
+  if ((view === "evaluation" || view === "report") && !isLoggedIn()) {
+    openAuthModal("signup", () => navigate(view));
+    view = "dashboard";
+  }
+
   pageTitle.textContent = TITLES[view] ?? view;
   nav.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === view);
@@ -68,6 +74,27 @@ async function navigate(view) {
   sidebar.classList.remove("open");
 }
 
+function updateAuthBadge() {
+  const el = document.getElementById("auth-badge");
+  if (!el) return;
+  const auth = loadAuth();
+  if (auth?.user) {
+    el.textContent = `${auth.user.evalCredits ?? 0} eval · ${auth.user.email.split("@")[0]}`;
+    el.className = "auth-badge signed-in";
+  } else {
+    el.textContent = "Sign up free";
+    el.className = "auth-badge";
+  }
+}
+
+async function onAuthChange() {
+  await refreshUser();
+  updateAuthBadge();
+  navigate("dashboard");
+}
+
+window.__onAuthChange = onAuthChange;
+
 function updateBadge() {
   const state = loadState();
   const score = state.report?.overall;
@@ -93,10 +120,21 @@ initWishlistModal();
 document.getElementById("waitlist-top-btn")?.addEventListener("click", () =>
   openWishlistModal("topbar")
 );
+document.getElementById("auth-badge")?.addEventListener("click", () => {
+  if (isLoggedIn()) {
+    if (confirm("Sign out?")) {
+      logout();
+      onAuthChange();
+    }
+  } else {
+    openAuthModal("signup", onAuthChange);
+  }
+});
 
 window.__navigate = navigate;
 window.__refreshWishlistUI = async () => {
   await refreshTopbarWaitlist();
+  updateAuthBadge();
   if (document.querySelector("[data-view='dashboard'].active")) {
     navigate("dashboard");
   }
@@ -104,3 +142,4 @@ window.__refreshWishlistUI = async () => {
 
 navigate("dashboard");
 refreshTopbarWaitlist();
+refreshUser().then(updateAuthBadge);

@@ -17,6 +17,7 @@ export function defaultState() {
     consecutiveWins: 0,
     aiSession: null,
     aiPowered: true,
+    evalCreditConsumed: false,
     report: null,
     profile: {
       experience: "intermediate",
@@ -41,6 +42,15 @@ export function saveState(state) {
 
 export function resetEval() {
   const s = defaultState();
+  s.evalCreditConsumed = false;
+  saveState(s);
+  return s;
+}
+
+export function resetEvalProgressOnly(state) {
+  const credit = state.evalCreditConsumed;
+  const s = defaultState();
+  s.evalCreditConsumed = credit;
   saveState(s);
   return s;
 }
