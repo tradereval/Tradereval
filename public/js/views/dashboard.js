@@ -28,13 +28,20 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">◆ White-glove trader training</p>
-        <h1>Real gold.<br/>Real edge.<br/>Lambo discipline.</h1>
+        <p class="eyebrow">Pro-grade trader training</p>
+        <h1>Test your skills.<br/>Then trade like<br/>you mean it.</h1>
         <p class="lead">
-          <strong>Real TradingView gold data</strong> — NY Open, London, overlap sessions.
-          Switch <strong>1m · 5m · 15m · 1h · 4h · 1d</strong> on the same setup.
-          AI shuffles historical days and grades your process, not hindsight.
+          Most traders blow up because they never practiced under pressure.
+          <strong>TraderEval</strong> puts you on real XAUUSD — NY Open, London, overlap —
+          with <strong>6 timeframes</strong> and an <strong>AI behavior report</strong> that shows
+          exactly where you leak before real money is on the line.
         </p>
+        <ul class="hero-bullets">
+          <li>Real TradingView gold — not fake AI candles</li>
+          <li>1m · 5m · 15m · 1h · 4h · 1d — full stack on every setup</li>
+          <li>AI shuffles sessions — can't memorize answers</li>
+          <li>Personal report: discipline, risk, psychology</li>
+        </ul>
         ${
           !isLoggedIn()
             ? `<p class="signup-note">Sign up required · <strong>${unlimited ? "unlimited evaluations while testing" : "1 free AI evaluation per email"}</strong></p>`
@@ -88,18 +95,47 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
 
     ${wishlistBannerHtml(waitlistCount)}
 
+    <section class="sell-strip">
+      <div class="sell-head">
+        <p class="eyebrow">What you're buying</p>
+        <h2>Not another course.<br/>A <span class="accent-word">pro-grade</span> rehearsal.</h2>
+      </div>
+      <div class="sell-grid">
+        <article class="sell-item">
+          <span class="sell-num">01</span>
+          <h3>Real market reps</h3>
+          <p>Historical XAUUSD at NY &amp; London open. You trade the same charts pros study — not a toy simulator.</p>
+        </article>
+        <article class="sell-item">
+          <span class="sell-num">02</span>
+          <h3>Full timeframe stack</h3>
+          <p>1m through 1D on one setup. See structure like you would on a real platform before you click Long or Short.</p>
+        </article>
+        <article class="sell-item">
+          <span class="sell-num">03</span>
+          <h3>AI behavior autopsy</h3>
+          <p>Every eval ends with a report on your decisions — FOMO, revenge, risk sizing — so you fix leaks early.</p>
+        </article>
+        <article class="sell-item sell-cta">
+          <h3>Free eval to start</h3>
+          <p>Sign up. Run your first session. See if you're execution-ready or still gambling.</p>
+          ${!isLoggedIn() ? `<button class="btn primary" data-action="signup">Get your free eval</button>` : canEvaluate ? `<button class="btn primary" data-action="start">Start now</button>` : `<button class="btn primary" data-open-wishlist="dashboard">Join waitlist</button>`}
+        </article>
+      </div>
+    </section>
+
     <section class="grid-3">
       <article class="card highlight-card">
-        <h3>Real XAUUSD data</h3>
-        <p>TradingView gold OHLC — NY Open, London, overlap. Not fake candles or random AI bars.</p>
+        <h3>Real XAUUSD</h3>
+        <p>TradingView OHLC at session opens — the moments that actually move gold.</p>
       </article>
       <article class="card highlight-card">
         <h3>6 timeframes</h3>
-        <p>1m · 5m · 15m · 1h · 4h · 1d — each with <strong>24h+ of real history</strong> before your decision.</p>
+        <p>M1 → D1 with 24h+ history. One setup, full picture across every timeframe.</p>
       </article>
       <article class="card highlight-card">
-        <h3>AI picks the day</h3>
-        <p>Shuffled historical sessions + behavior report. Know your leaks before you risk capital.</p>
+        <h3>AI-curated days</h3>
+        <p>Shuffled replays + quizzes every run. Train edge, not memory.</p>
       </article>
     </section>
   `;

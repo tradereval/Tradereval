@@ -67,7 +67,7 @@ export function drawChart(canvas, bars, options = {}) {
   if (options.situationLabel) {
     ctx.fillStyle = "#0a0a0ccc";
     ctx.fillRect(8, 6, Math.min(w - 16, options.situationLabel.length * 7 + 24), 20);
-    ctx.fillStyle = "#f5d061";
+    ctx.fillStyle = "#bfff00";
     ctx.font = "bold 11px system-ui, sans-serif";
     ctx.fillText(options.situationLabel.toUpperCase(), 14, 20);
   }
@@ -100,7 +100,7 @@ export function drawChart(canvas, bars, options = {}) {
     const markerIdx = slice.findIndex((b) => b.t >= options.markerTs);
     if (markerIdx >= 0) {
       const mx = offsetX + markerIdx * (candleW + gap) + candleW / 2;
-      ctx.strokeStyle = "#d4af37";
+      ctx.strokeStyle = "#7acc00";
       ctx.setLineDash([3, 3]);
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -108,7 +108,7 @@ export function drawChart(canvas, bars, options = {}) {
       ctx.lineTo(mx, h - padBot);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = "#f5d061";
+      ctx.fillStyle = "#bfff00";
       ctx.font = "bold 9px system-ui, sans-serif";
       ctx.fillText((options.sessionLabel || "SESSION").toUpperCase(), mx + 4, padTop + 14);
     }
@@ -167,7 +167,7 @@ export function drawChart(canvas, bars, options = {}) {
   const lastX = offsetX + (slice.length - 1) * (candleW + gap) + candleW / 2;
 
   // decision point — last candle is where you trade
-  ctx.strokeStyle = "#f5d061";
+  ctx.strokeStyle = "#bfff00";
   ctx.setLineDash([4, 3]);
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -175,12 +175,12 @@ export function drawChart(canvas, bars, options = {}) {
   ctx.lineTo(lastX, h - padBot);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle = "#f5d061";
+  ctx.fillStyle = "#bfff00";
   ctx.font = "bold 9px system-ui, sans-serif";
   ctx.fillText("DECISION", lastX - 42, padTop + 12);
 
   ctx.setLineDash([4, 3]);
-  ctx.strokeStyle = "#f5d061";
+  ctx.strokeStyle = "#bfff00";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(48, yLast);
@@ -188,7 +188,7 @@ export function drawChart(canvas, bars, options = {}) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = "#f5d061";
+  ctx.fillStyle = "#bfff00";
   ctx.font = "11px JetBrains Mono, ui-monospace, monospace";
   ctx.textAlign = "right";
   ctx.fillText(last.c.toFixed(2), w - 10, yLast - 5);

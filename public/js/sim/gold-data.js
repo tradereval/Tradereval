@@ -2,6 +2,19 @@
 
 export const TIMEFRAMES = ["M1", "M5", "M15", "H1", "H4", "D1"];
 
+const TF_LABELS = {
+  M1: "1m",
+  M5: "5m",
+  M15: "15m",
+  H1: "1h",
+  H4: "4h",
+  D1: "1d",
+};
+
+export function tfLabel(tf) {
+  return TF_LABELS[tf] || tf;
+}
+
 const TF_NATIVE = {
   M5: "m5",
   M15: "m15",

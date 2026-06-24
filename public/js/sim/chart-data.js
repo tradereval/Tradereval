@@ -95,4 +95,4 @@ export async function loadChartBars(tf, meta) {
   return bars.map(normalizeBar);
 }
 
-export { TIMEFRAMES } from "./gold-data.js";
+export { TIMEFRAMES, tfLabel } from "./gold-data.js";

@@ -1,6 +1,6 @@
 import { loadState, saveState, resetEval } from "../store.js";
 import { createStaticChart } from "../sim/chart.js";
-import { prepareChartMeta, loadChartBars, computeLevels, TIMEFRAMES } from "../sim/chart-data.js";
+import { prepareChartMeta, loadChartBars, computeLevels, TIMEFRAMES, tfLabel } from "../sim/chart-data.js";
 import { loadReplayLibrary } from "../sim/replay-loader.js";
 import { preloadGoldData, contextLabel } from "../sim/gold-data.js";
 import { recordAction, generateReport } from "../sim/scoring.js";
@@ -76,7 +76,7 @@ export async function renderEvaluation(container, { navigate }) {
         <div class="window-meta">
           <span class="pill">${win.label}</span>
           <span class="setup-tag">${situationLabel}</span>
-          ${chartMeta.isReal ? `<span class="session-tag">${chartMeta.sessionLabel} · ${chartMeta.replayDate}</span><span class="real-data-tag">Real XAUUSD</span>` : ""}
+          ${chartMeta.isReal ? `<span class="session-tag">${chartMeta.sessionLabel} · ${chartMeta.replayDate}</span><span class="real-data-tag">Live setup</span>` : ""}
           <p>${win.context}</p>
         </div>
         <ul class="live-stats">
@@ -84,7 +84,7 @@ export async function renderEvaluation(container, { navigate }) {
           <li>Decisions <strong>${state.actionLog.length}</strong></li>
           <li>Position <strong>${hasPosition ? state.openPosition.dir.toUpperCase() : "Flat"}</strong></li>
         </ul>
-        <p class="hint">Full day of real price action before each decision · switch timeframes · right edge = your entry moment.</p>
+        <p class="hint">Full day of real price action · switch timeframes · right edge = your entry.</p>
       </aside>
 
       <section class="eval-main">
@@ -94,7 +94,7 @@ export async function renderEvaluation(container, { navigate }) {
               <span class="chart-symbol">${meta.symbol}</span>
               ${chartMeta.isReal ? `<span class="replay-badge">${chartMeta.sessionLabel} · ${chartMeta.sessionTime} ET</span>` : ""}
               <div class="tf-tabs" id="tf-tabs">
-                ${TIMEFRAMES.map((tf) => `<button type="button" class="tf-tab ${tf === defaultTf ? "active" : ""}" data-tf="${tf}">${tf}</button>`).join("")}
+                ${TIMEFRAMES.map((tf) => `<button type="button" class="tf-tab ${tf === defaultTf ? "active" : ""}" data-tf="${tf}">${tfLabel(tf)}</button>`).join("")}
               </div>
             </div>
             <div class="chart-toolbar-right">
@@ -114,7 +114,7 @@ export async function renderEvaluation(container, { navigate }) {
             <span><i class="leg open"></i> Session open</span>
           </div>
           <canvas id="price-chart" height="360"></canvas>
-          <p class="chart-foot muted" id="chart-status">${chartMeta.isReal ? `Real TVC:GOLD · ${defaultTf} · ${contextLabel(defaultTf)} · ${chartMeta.replayDate}` : "Multi-timeframe chart — 24h+ context before you trade."}</p>
+          <p class="chart-foot muted" id="chart-status">${chartMeta.isReal ? `Real TVC:GOLD · ${tfLabel(defaultTf)} · ${contextLabel(defaultTf)} · ${chartMeta.replayDate}` : "Multi-timeframe chart — 24h+ context before you trade."}</p>
         </div>
 
         ${
@@ -201,7 +201,7 @@ export async function renderEvaluation(container, { navigate }) {
       if (tfBars.length) {
         chartCtrl.setBars(tfBars, tf);
         if (chartStatus) {
-          chartStatus.textContent = `Real TVC:GOLD · ${tf} · ${contextLabel(tf)} · ${chartMeta.replayDate || ""}`;
+          chartStatus.textContent = `Real TVC:GOLD · ${tfLabel(tf)} · ${contextLabel(tf)} · ${chartMeta.replayDate || ""}`;
         }
       }
     });
