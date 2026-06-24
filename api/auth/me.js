@@ -1,5 +1,6 @@
 const { getEmailByToken, getUser, publicUser } = require("../lib/users");
 const { withHandler } = require("../lib/http");
+const { withEvalPolicy } = require("../lib/evals");
 
 function getToken(req) {
   const auth = req.headers.authorization || req.headers.Authorization || "";
@@ -22,7 +23,7 @@ const handler = withHandler(async function me(req, res) {
   const session = await requireUser(req);
   if (!session) return res.status(401).json({ error: "Not signed in." });
 
-  return res.status(200).json({ user: publicUser(session.user) });
+  return res.status(200).json({ user: withEvalPolicy(session.user, publicUser) });
 });
 
 handler.getToken = getToken;

@@ -79,7 +79,8 @@ function updateAuthBadge() {
   if (!el) return;
   const auth = loadAuth();
   if (auth?.user) {
-    el.textContent = `${auth.user.evalCredits ?? 0} eval · ${auth.user.email.split("@")[0]}`;
+    const label = auth.user.unlimitedEvals ? "∞ evals" : `${auth.user.evalCredits ?? 0} eval`;
+    el.textContent = `${label} · ${auth.user.email.split("@")[0]}`;
     el.className = "auth-badge signed-in";
   } else {
     el.textContent = "Sign up free";

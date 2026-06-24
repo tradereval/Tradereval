@@ -7,20 +7,24 @@ import {
   loadAuth,
   isLoggedIn,
   openAuthModal,
-  consumeEvalCredit,
   checkEvalCredit,
+  refreshUser,
 } from "../auth.js";
 import { fetchAiStatus } from "../ai/client.js";
 
 export async function renderDashboard(container, { navigate }, waitlistCount = null) {
   const state = loadState();
   const auth = loadAuth();
+  if (isLoggedIn()) await refreshUser();
+  const user = loadAuth()?.user;
   const aiStatus = await fetchAiStatus();
   const totalWindows = getTotalWindows(state) || 6;
   const progress = state.evalComplete
     ? 100
     : Math.round((state.currentWindowIdx / totalWindows) * 100);
-  const credits = auth?.user?.evalCredits ?? 0;
+  const unlimited = user?.unlimitedEvals === true || aiStatus.unlimitedEvals === true;
+  const credits = unlimited ? "∞" : (user?.evalCredits ?? 0);
+  const canEvaluate = unlimited || (user?.evalCredits ?? 0) > 0;
 
   container.innerHTML = `
     <section class="hero">
@@ -33,8 +37,8 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
         </p>
         ${
           !isLoggedIn()
-            ? `<p class="signup-note">Free sign up required · <strong>1 free AI evaluation per email</strong></p>`
-            : `<p class="signup-note">Signed in as <strong>${auth.user.email}</strong> · Free evals left: <strong>${credits}</strong></p>`
+            ? `<p class="signup-note">Sign up required · <strong>${unlimited ? "unlimited evaluations while testing" : "1 free AI evaluation per email"}</strong></p>`
+            : `<p class="signup-note">Signed in as <strong>${user.email}</strong> · Evals: <strong>${credits}</strong>${unlimited ? " <span class='testing-pill'>testing</span>" : ""}</p>`
         }
         <div class="hero-actions">
           ${
@@ -43,11 +47,12 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
                  <button class="btn ghost" data-action="login">Sign in</button>`
               : state.evalComplete
                 ? `<button class="btn primary" data-action="report">View your report</button>
-                   ${credits > 0 ? `<button class="btn ghost" data-action="start">Use another free eval</button>` : `<button class="btn ghost" data-open-wishlist="dashboard">Join waitlist for more</button>`}`
+                   <button class="btn ghost" data-action="start">${unlimited ? "Start new evaluation" : canEvaluate ? "Use another free eval" : ""}</button>
+                   ${!unlimited && !canEvaluate ? `<button class="btn ghost" data-open-wishlist="dashboard">Join waitlist for more</button>` : ""}`
                 : state.evalStarted
                   ? `<button class="btn primary" data-action="continue">Continue Day ${state.currentDay}</button>`
-                  : credits > 0
-                    ? `<button class="btn primary" data-action="start">Start your free evaluation</button>`
+                  : canEvaluate
+                    ? `<button class="btn primary" data-action="start">${unlimited ? "Start evaluation" : "Start your free evaluation"}</button>`
                     : `<button class="btn primary" data-open-wishlist="dashboard">No evals left — join waitlist</button>`
           }
         </div>
@@ -63,13 +68,18 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
         </div>
         <ul class="stat-list">
           <li><span>Account</span><strong>${isLoggedIn() ? "Active" : "Sign up required"}</strong></li>
-          <li><span>Free evals left</span><strong>${isLoggedIn() ? credits : "1 on signup"}</strong></li>
+          <li><span>Evals available</span><strong>${isLoggedIn() ? credits : unlimited ? "∞" : "1 on signup"}</strong></li>
           <li><span>Decisions logged</span><strong>${state.actionLog.length}</strong></li>
           <li><span>Sim P&amp;L</span><strong class="${state.simPnlR >= 0 ? "pos" : "neg"}">${state.simPnlR >= 0 ? "+" : ""}${state.simPnlR.toFixed(1)}R</strong></li>
         </ul>
       </div>
     </section>
 
+    ${
+      unlimited
+        ? `<section class="ai-status-banner connected"><span class="ai-dot"></span> <strong>Testing mode:</strong> unlimited evaluations — sign up only</section>`
+        : ""
+    }
     ${
       aiStatus.configured
         ? `<section class="ai-status-banner connected"><span class="ai-dot"></span> AI engine connected · scenarios &amp; reports powered by OpenAI (${aiStatus.model || "gpt-4o-mini"})</section>`

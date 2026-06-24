@@ -1,6 +1,7 @@
 const { hashPassword, createSalt, createToken } = require("../lib/crypto");
 const { getUser, saveUser, saveToken, publicUser } = require("../lib/users");
 const { withHandler } = require("../lib/http");
+const { withEvalPolicy, isUnlimitedEvals } = require("../lib/evals");
 
 module.exports = withHandler(async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
@@ -40,7 +41,9 @@ module.exports = withHandler(async function handler(req, res) {
 
   return res.status(200).json({
     token,
-    user: publicUser(user),
-    message: "Account created. You have 1 free evaluation.",
+    user: withEvalPolicy(user, publicUser),
+    message: isUnlimitedEvals()
+      ? "Account created. Unlimited evaluations while testing."
+      : "Account created. You have 1 free evaluation.",
   });
 });

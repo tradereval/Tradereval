@@ -1,6 +1,7 @@
 const { verifyPassword, createToken } = require("../lib/crypto");
 const { getUser, saveToken, publicUser } = require("../lib/users");
 const { withHandler } = require("../lib/http");
+const { withEvalPolicy } = require("../lib/evals");
 
 module.exports = withHandler(async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
@@ -18,5 +19,5 @@ module.exports = withHandler(async function handler(req, res) {
   const token = createToken();
   await saveToken(token, email);
 
-  return res.status(200).json({ token, user: publicUser(user) });
+  return res.status(200).json({ token, user: withEvalPolicy(user, publicUser) });
 });
