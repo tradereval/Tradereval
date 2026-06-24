@@ -16,7 +16,7 @@ async function parseJsonResponse(res) {
 
 export async function fetchAiStatus() {
   try {
-    const res = await fetch("/api/ai/status");
+    const res = await fetch("/api/config");
     const data = await parseJsonResponse(res);
     if (!res.ok) return { configured: false, model: null };
     return data;

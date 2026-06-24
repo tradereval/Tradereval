@@ -1,4 +1,4 @@
-const { openaiJson } = require("./lib/openai");
+const { openaiJson } = require("../lib/openai");
 
 const SYSTEM = `You are an expert trading psychology coach for TraderEval.
 Evaluate trader BEHAVIOR from their actions and quiz answers — not P&L alone.

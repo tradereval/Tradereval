@@ -76,16 +76,15 @@ function createVercelRes(nodeRes) {
 
 const generateSession = require("./api/generate-session");
 const evaluateSession = require("./api/evaluate-session");
-const authSignup = require("./api/auth/signup");
-const authLogin = require("./api/auth/login");
-const authMe = require("./api/auth/me");
+const authRouter = require("./api/auth/[action]");
 const evalConsume = require("./api/eval/consume");
+const apiConfig = require("./api/config");
 
 const API_POST = {
   "/api/generate-session": generateSession,
   "/api/evaluate-session": evaluateSession,
-  "/api/auth/signup": authSignup,
-  "/api/auth/login": authLogin,
+  "/api/auth/signup": (req, res) => authRouter({ ...req, query: { action: "signup" } }, res),
+  "/api/auth/login": (req, res) => authRouter({ ...req, query: { action: "login" } }, res),
   "/api/eval/consume": evalConsume,
 };
 
@@ -115,7 +114,16 @@ http
 
     if (urlPath === "/api/auth/me" && req.method === "GET") {
       try {
-        await authMe(req, createVercelRes(res));
+        await authRouter({ ...req, query: { action: "me" } }, createVercelRes(res));
+      } catch (err) {
+        sendJson(res, 500, { error: err.message });
+      }
+      return;
+    }
+
+    if (urlPath === "/api/config" && req.method === "GET") {
+      try {
+        await apiConfig(req, createVercelRes(res));
       } catch (err) {
         sendJson(res, 500, { error: err.message });
       }

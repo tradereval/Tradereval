@@ -1,4 +1,4 @@
-const { openaiJson } = require("./lib/openai");
+const { openaiJson } = require("../lib/openai");
 
 const SYSTEM = `You are TraderEval's simulation engine for XAUUSD (gold) trader behavior assessment.
 Generate unique, realistic trading scenarios. Never give live buy/sell signals for real money.
