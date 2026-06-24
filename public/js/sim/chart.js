@@ -91,6 +91,11 @@ export function drawChart(canvas, bars, visibleCount, options = {}) {
   drawLevel(levels.support, "#38bdf888", "Sup");
   drawLevel(levels.sessionOpen, "#a78bfa66", "Open");
 
+  const candleW = Math.max(5, Math.min(16, (w - 56) / slice.length - 3));
+  const gap = 2;
+  const chartW = slice.length * (candleW + gap);
+  const offsetX = Math.max(48, w - chartW - 12);
+
   // EMA
   const ema = emaValues(aggregated, Math.min(20, aggregated.length));
   const emaSlice = ema.slice(-slice.length);
@@ -99,18 +104,13 @@ export function drawChart(canvas, bars, visibleCount, options = {}) {
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     emaSlice.forEach((v, i) => {
-      const x = candleX(i, slice.length, w);
+      const x = offsetX + i * (candleW + gap) + candleW / 2;
       const y = yPrice(v);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
   }
-
-  const candleW = Math.max(5, Math.min(16, (w - 56) / slice.length - 3));
-  const gap = 2;
-  const chartW = slice.length * (candleW + gap);
-  const offsetX = Math.max(48, w - chartW - 12);
 
   // candles
   slice.forEach((bar, i) => {
