@@ -21,9 +21,30 @@ export function addTimestamps(bars, minutesPerBar = 15, sessionStartHour = 8) {
   const base = new Date();
   base.setHours(sessionStartHour, 0, 0, 0);
   return bars.map((b, i) => ({
-    ...b,
+    ...normalizeBar(b),
     t: b.t ?? base.getTime() + i * minutesPerBar * 60_000,
   }));
+}
+
+export function normalizeBar(b) {
+  const c = Number(b?.c ?? b?.close ?? 2350);
+  const o = Number(b?.o ?? b?.open ?? c);
+  const h = Number(b?.h ?? b?.high ?? Math.max(o, c));
+  const l = Number(b?.l ?? b?.low ?? Math.min(o, c));
+  return {
+    o: Number.isFinite(o) ? o : 2350,
+    h: Number.isFinite(h) ? h : o + 1,
+    l: Number.isFinite(l) ? l : o - 1,
+    c: Number.isFinite(c) ? c : o,
+    t: b?.t,
+  };
+}
+
+export function normalizeBars(bars) {
+  if (!Array.isArray(bars) || !bars.length) {
+    return [{ o: 2350, h: 2351, l: 2349, c: 2350 }];
+  }
+  return bars.map(normalizeBar);
 }
 
 /** Build leading context so AI windows feel like a real chart, not 12 random candles */
@@ -51,7 +72,7 @@ export function enrichBarsWithHistory(bars, targetCount = 48) {
     price = c;
   }
 
-  const stitched = [...out, ...bars.map((b) => ({ ...b }))];
+  const stitched = [...out, ...normalizeBars(bars)];
   return addTimestamps(stitched);
 }
 
@@ -111,19 +132,21 @@ export function prepareChartData(win, session) {
   let lookback = win.lookback || 40;
 
   if (win.bars?.length) {
-    bars = enrichBarsWithHistory(win.bars, 52);
+    bars = enrichBarsWithHistory(normalizeBars(win.bars), 52);
     barIndex = bars.length - 1;
   } else if (session.bars && win.barIndex != null) {
-    bars = addTimestamps(session.bars);
-    barIndex = win.barIndex;
+    bars = addTimestamps(normalizeBars(session.bars));
+    barIndex = Math.min(win.barIndex, bars.length - 1);
     lookback = win.lookback || 28;
   } else {
-    bars = addTimestamps([{ o: 2350, h: 2351, l: 2349, c: 2350 }]);
+    bars = addTimestamps(normalizeBars([]));
     barIndex = 0;
   }
 
+  const bar = bars[barIndex] ?? bars.at(-1);
   const levels = computeLevels(bars, barIndex);
   return {
+    bar,
     bars,
     barIndex,
     lookback,
