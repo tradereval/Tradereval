@@ -1,0 +1,99 @@
+================================================================================
+  TRADEREVAL.COM — GO LIVE CHECKLIST
+  Domain: tradereval.com (Google / Squarespace)
+================================================================================
+
+YOU HAVE: tradereval.com ✓
+WE BUILD: the app in this folder ✓
+NEXT: put the app on the internet and connect your domain
+
+--------------------------------------------------------------------------------
+STEP 1 — GITHUB (5 minutes)
+--------------------------------------------------------------------------------
+1. Go to https://github.com and sign up (free)
+2. Click "+" → New repository
+3. Name: tradereval
+4. Keep it Private or Public (your choice)
+5. Do NOT add README — create empty repo
+6. Copy the repo URL (looks like https://github.com/YOURNAME/tradereval.git)
+
+Tell me your GitHub username and I can help push the code, OR follow GitHub's
+"upload files" and drag the whole trader-eval folder.
+
+--------------------------------------------------------------------------------
+STEP 2 — VERCEL (5 minutes) — hosts the website free
+--------------------------------------------------------------------------------
+1. Go to https://vercel.com → Sign up with GitHub
+2. Add New Project → Import your tradereval repo
+3. Root Directory: leave as / (or set to trader-eval if repo is whole mt5 folder)
+4. Click Deploy
+5. You get a free URL like: https://tradereval.vercel.app — test it works
+
+--------------------------------------------------------------------------------
+STEP 3 — CONNECT tradereval.com (10 minutes)
+--------------------------------------------------------------------------------
+In VERCEL:
+1. Project → Settings → Domains
+2. Add: tradereval.com
+3. Add: www.tradereval.com
+4. Vercel shows DNS records to add
+
+In SQUARESPACE (your Google domain):
+1. Log in at https://account.squarespace.com
+2. Domains → tradereval.com → DNS Settings
+3. Add the records Vercel shows you, usually:
+
+   Type    Host    Value
+   ----    ----    -----
+   A       @       76.76.21.21
+   CNAME   www     cname.vercel-dns.com
+
+4. Save. Wait 5 minutes to 48 hours (often under 1 hour)
+5. Vercel will show green checkmark when connected
+
+--------------------------------------------------------------------------------
+STEP 4 — WAITLIST STORAGE (5 minutes) — so emails are saved online
+--------------------------------------------------------------------------------
+Option A — Upstash (recommended, free tier):
+1. https://upstash.com → sign up → Create Redis database
+2. Copy REST URL and REST TOKEN
+3. Vercel → Project → Settings → Environment Variables:
+   UPSTASH_REDIS_REST_URL = (paste)
+   UPSTASH_REDIS_REST_TOKEN = (paste)
+4. Redeploy project
+
+Option B — Formspree (simpler, emails to your inbox):
+1. https://formspree.io → new form
+2. Copy form URL
+3. Vercel env: FORMSPREE_URL = https://formspree.io/f/xxxxx
+4. Redeploy
+
+--------------------------------------------------------------------------------
+STEP 5 — OPENAI (later, when we add AI reports)
+--------------------------------------------------------------------------------
+1. https://platform.openai.com → API keys → Create key
+2. NEVER paste key in chat or GitHub
+3. Vercel → Environment Variables:
+   OPENAI_API_KEY = sk-...
+4. I will wire the coaching reports in a future update
+
+--------------------------------------------------------------------------------
+STEP 6 — STRIPE (much later)
+--------------------------------------------------------------------------------
+Only when you want paid re-evaluations. Skip for now.
+
+--------------------------------------------------------------------------------
+WHAT TO SEND ME IN CHAT
+--------------------------------------------------------------------------------
+✓ tradereval.com (done)
+→ GitHub username (after you create repo)
+→ "Deployed on Vercel" when step 2 is done
+→ Any errors from DNS or deploy screens (screenshot or copy text)
+
+--------------------------------------------------------------------------------
+LOCAL TEST (your PC, before going live)
+--------------------------------------------------------------------------------
+Double-click START-HERE.bat → http://localhost:8080
+Waitlist saves to wishlist.json on your computer only.
+
+================================================================================
