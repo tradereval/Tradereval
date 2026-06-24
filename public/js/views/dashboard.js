@@ -23,11 +23,11 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">AI-powered · Every run is unique</p>
-        <h1>Trade the simulation.<br/>AI builds every scenario.</h1>
+        <p class="eyebrow">Test before you risk real capital</p>
+        <h1>Train your execution.<br/>AI builds every scenario.</h1>
         <p class="lead">
-          <strong>Why AI?</strong> Same static setups get memorized — useless for real growth.
-          Our AI creates <strong>new trades, quizzes, and charts every evaluation</strong> so you practice real decisions, not answers you remember.
+          <strong>Test your skills before risking your capital.</strong> We train you and help you stabilize your execution —
+          with <strong>new AI trades and quizzes every evaluation</strong>, so you practice real decisions, not memorized answers.
         </p>
         ${
           !isLoggedIn()

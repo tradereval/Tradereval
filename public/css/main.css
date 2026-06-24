@@ -119,6 +119,17 @@ body {
   min-width: 0;
 }
 
+.top-tagline {
+  background: linear-gradient(90deg, #0c4a6e 0%, #1e3a5f 50%, #0c4a6e 100%);
+  color: #e0f2fe;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.65rem 1.25rem;
+  line-height: 1.45;
+  border-bottom: 1px solid #0369a1;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -884,6 +895,10 @@ body {
   }
   .eval-sidebar {
     position: static;
+  }
+  .top-tagline {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.75rem;
   }
   .dim-row {
     grid-template-columns: 1fr;
