@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = __dirname;
+const publicRoot = path.join(root, "public");
 const port = 8080;
 const wishlistFile = path.join(root, "wishlist.json");
 
@@ -114,9 +115,9 @@ http
       return;
     }
 
-    const filePath = path.join(root, urlPath === "/" ? "index.html" : urlPath);
+    let filePath = path.join(publicRoot, urlPath === "/" ? "index.html" : urlPath);
 
-    if (!filePath.startsWith(root)) {
+    if (!filePath.startsWith(publicRoot)) {
       res.writeHead(403);
       res.end("Forbidden");
       return;

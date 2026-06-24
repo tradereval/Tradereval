@@ -66,7 +66,7 @@ async function saveFormspree(entry) {
   return { ok: true, via: "formspree" };
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   cors(res);
 
   if (req.method === "OPTIONS") {
