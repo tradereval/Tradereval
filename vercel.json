@@ -3,5 +3,9 @@
   "framework": null,
   "buildCommand": "",
   "installCommand": "",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "functions": {
+    "api/generate-session.js": { "maxDuration": 60 },
+    "api/evaluate-session.js": { "maxDuration": 60 }
+  }
 }

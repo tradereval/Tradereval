@@ -1,0 +1,28 @@
+================================================================================
+  ENABLE AI ON tradereval.com (one-time setup)
+================================================================================
+
+1. Go to https://platform.openai.com → API keys → Create key
+2. Copy the key (starts with sk-...) — do NOT share it in chat
+
+3. Vercel → your tradereval project → Settings → Environment Variables
+   Name:  OPENAI_API_KEY
+   Value: sk-... (paste your key)
+   Environments: Production ✓
+
+   Optional:
+   Name:  OPENAI_MODEL
+   Value: gpt-4o-mini   (cheaper, good for launch)
+
+4. Click Save → Deployments → Redeploy (latest)
+
+5. Test: tradereval.com → Start free evaluation
+   - "AI is building your trading scenarios…" (10-30 sec)
+   - Each window: chart + quiz + trade buttons
+   - End: "AI is analyzing your behavior…" → full coaching report
+
+WITHOUT the API key: site still works using the built-in demo scenarios.
+
+COST: roughly $0.10–0.40 per full evaluation (varies by model and length).
+
+================================================================================

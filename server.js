@@ -53,6 +53,30 @@ function readBody(req) {
   });
 }
 
+function createVercelRes(nodeRes) {
+  const out = {
+    statusCode: 200,
+    setHeader(k, v) {
+      nodeRes.setHeader(k, v);
+      return out;
+    },
+    status(code) {
+      out.statusCode = code;
+      return out;
+    },
+    json(data) {
+      sendJson(nodeRes, out.statusCode, data);
+    },
+    end(msg) {
+      nodeRes.end(msg || "");
+    },
+  };
+  return out;
+}
+
+const generateSession = require("./api/generate-session");
+const evaluateSession = require("./api/evaluate-session");
+
 http
   .createServer(async (req, res) => {
     const urlPath = req.url.split("?")[0];
@@ -64,6 +88,20 @@ http
         "Access-Control-Allow-Headers": "Content-Type",
       });
       res.end();
+      return;
+    }
+
+    if (
+      (urlPath === "/api/generate-session" || urlPath === "/api/evaluate-session") &&
+      req.method === "POST"
+    ) {
+      try {
+        req.body = await readBody(req);
+        const handler = urlPath === "/api/generate-session" ? generateSession : evaluateSession;
+        await handler(req, createVercelRes(res));
+      } catch (err) {
+        sendJson(res, 500, { error: err.message });
+      }
       return;
     }
 

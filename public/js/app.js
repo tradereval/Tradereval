@@ -38,10 +38,10 @@ async function navigate(view) {
       renderDashboard(content, ctx, await refreshTopbarWaitlist());
       break;
     case "evaluation":
-      renderEvaluation(content, ctx);
+      await renderEvaluation(content, ctx);
       break;
     case "report":
-      renderReport(content, ctx);
+      await renderReport(content, ctx);
       break;
     case "quizzes":
       renderComingSoon(

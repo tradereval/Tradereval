@@ -1,11 +1,12 @@
 import { DIMENSIONS, gradeForScore } from "../data/dimensions.js";
-import { SIM_CONFIG, getTotalWindows } from "../data/simulation.js";
+import { SIM_CONFIG } from "../data/simulation.js";
 import { loadState, saveState, resetEval } from "../store.js";
 import { wishlistBannerHtml, wireWishlistButtons } from "../wishlist.js";
+import { getTotalWindows } from "../ai/session.js";
 
 export async function renderDashboard(container, { navigate }, waitlistCount = null) {
   const state = loadState();
-  const totalWindows = getTotalWindows();
+  const totalWindows = getTotalWindows(state) || 9;
   const progress = state.evalComplete
     ? 100
     : Math.round((state.currentWindowIdx / totalWindows) * 100);
@@ -13,12 +14,11 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">No funding · No prop firm · Pure evaluation</p>
-        <h1>Trade the simulation.<br/>Discover who you really are.</h1>
+        <p class="eyebrow">AI-powered · No funding · No prop firm</p>
+        <h1>Trade the simulation.<br/>AI builds every scenario.</h1>
         <p class="lead">
-          Walk through <strong>${SIM_CONFIG.fullProgramDays} days</strong> of continuous market action
-          (${SIM_CONFIG.totalDays}-day demo live now). We watch every decision — entries, passes, size, stops —
-          and build your trader identity report.
+          <strong>AI generates</strong> your trades, quiz questions, and coaching report — nothing to update manually.
+          Each run is a new ${SIM_CONFIG.totalDays}-day XAUUSD story. You click; AI evaluates behavior.
         </p>
         <div class="hero-actions">
           ${
@@ -54,8 +54,8 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
 
     <section class="grid-3">
       <article class="card">
-        <h3>Action-based eval</h3>
-        <p>Not a Q&amp;A quiz. You trade, pass, size, and place stops — we score behavior.</p>
+        <h3>AI-generated</h3>
+        <p>New scenarios, Q&amp;A, and reports every time — you never edit content by hand.</p>
       </article>
       <article class="card">
         <h3>Continuous price</h3>
@@ -75,6 +75,7 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
 
   wireWishlistButtons(container);
   container.querySelector('[data-action="start"]')?.addEventListener("click", () => {
+    resetEval();
     const s = loadState();
     s.evalStarted = true;
     s.profile.startedAt = new Date().toISOString();

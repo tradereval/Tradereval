@@ -4,18 +4,22 @@ export function defaultState() {
   return {
     evalStarted: false,
     evalComplete: false,
+    evalLoading: false,
     currentDay: 1,
     currentWindowIdx: 0,
     completedDays: 0,
     actionLog: [],
+    quizAnswers: [],
     simPnlR: 0,
     openPosition: null,
     lastRiskPct: 1,
     consecutiveLosses: 0,
     consecutiveWins: 0,
+    aiSession: null,
+    aiPowered: true,
     report: null,
     profile: {
-      experience: "",
+      experience: "intermediate",
       startedAt: null,
     },
   };
@@ -39,11 +43,4 @@ export function resetEval() {
   const s = defaultState();
   saveState(s);
   return s;
-}
-
-export function getProgress(state, totalDays, totalWindows) {
-  const done = state.evalComplete
-    ? totalWindows
-    : state.currentWindowIdx + (state.currentDay - 1) * (totalWindows / totalDays);
-  return Math.min(100, Math.round((state.currentWindowIdx / totalWindows) * 100));
 }
