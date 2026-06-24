@@ -4,12 +4,15 @@ async function parseJsonResponse(res) {
   try {
     return JSON.parse(text);
   } catch {
+    const gateway = text.includes("504") || text.toLowerCase().includes("timeout");
     throw new Error(
       res.ok
         ? "Invalid server response."
-        : text.startsWith("A server error")
-          ? "Server error — check Vercel deployment logs."
-          : text.slice(0, 200)
+        : gateway
+          ? "AI took too long (server timeout). Retrying with a smaller batch…"
+          : text.startsWith("A server error")
+            ? "Server error — check Vercel deployment logs."
+            : text.slice(0, 200)
     );
   }
 }
@@ -21,12 +24,39 @@ async function fetchWithTimeout(url, options = {}, ms = 60000) {
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (err) {
     if (err.name === "AbortError") {
-      throw new Error("Request timed out. The server may still be starting — try again in a moment.");
+      throw new Error("Request timed out. Please try again — each day takes about 15–20 seconds.");
     }
     throw err;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function generateOneDay({ dayIndex, totalDays, windowsPerDay, experience, priorContext, seed }) {
+  const res = await fetchWithTimeout(
+    "/api/generate-session",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dayIndex,
+        totalDays,
+        windowsPerDay,
+        experience,
+        priorContext,
+        seed,
+      }),
+    },
+    55000
+  );
+  const data = await parseJsonResponse(res);
+  if (!res.ok) {
+    throw new Error(data.error || "Could not generate session day");
+  }
+  if (data.source !== "ai" || !data.days?.length) {
+    throw new Error("Server did not return an AI session day.");
+  }
+  return data;
 }
 
 export async function fetchAiStatus() {
@@ -41,30 +71,35 @@ export async function fetchAiStatus() {
 }
 
 export async function generateAiSession(options = {}) {
-  const res = await fetchWithTimeout(
-    "/api/generate-session",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        totalDays: options.totalDays ?? 3,
-        windowsPerDay: options.windowsPerDay ?? 2,
-        experience: options.experience ?? "intermediate",
-      }),
-    },
-    90000
-  );
-  const data = await parseJsonResponse(res);
-  if (!res.ok) {
-    const msg =
-      data.error ||
-      (data.fallback ? "AI not configured on server." : "Could not generate session");
-    throw new Error(msg);
+  const totalDays = options.totalDays ?? 3;
+  const windowsPerDay = options.windowsPerDay ?? 2;
+  const experience = options.experience ?? "intermediate";
+  const onProgress = options.onProgress;
+  const seed = options.seed ?? Date.now();
+
+  const allDays = [];
+  let priorContext = "";
+
+  for (let day = 1; day <= totalDays; day++) {
+    onProgress?.(`Building Day ${day} of ${totalDays}…`, day, totalDays);
+    const chunk = await generateOneDay({
+      dayIndex: day,
+      totalDays,
+      windowsPerDay,
+      experience,
+      priorContext,
+      seed,
+    });
+    allDays.push(...chunk.days);
+    priorContext = [priorContext, chunk.daySummary].filter(Boolean).join(" ");
   }
-  if (data.source !== "ai") {
-    throw new Error("Server did not return an AI session.");
-  }
-  return data;
+
+  return {
+    source: "ai",
+    symbol: "XAUUSD",
+    totalDays: allDays.length,
+    days: allDays,
+  };
 }
 
 export async function evaluateAiSession(payload) {

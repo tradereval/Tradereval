@@ -286,15 +286,21 @@ async function loadAiSession(container, state, navigate) {
     if (!el) return;
     const t = el.dataset.tick ? Number(el.dataset.tick) + 1 : 1;
     el.dataset.tick = String(t);
-    if (t > 15) el.textContent = "Still working — OpenAI is generating your unique session…";
-    else if (t > 8) el.textContent = "Almost there — building charts and quiz questions…";
+    if (t > 20) el.textContent = "Still working — each day takes ~15–20 seconds…";
+    else if (t > 10) el.textContent = "Building your scenarios day by day…";
   }, 3000);
+
+  const setProgress = (msg) => {
+    const h2 = container.querySelector(".loading-card h2");
+    if (h2) h2.textContent = msg;
+  };
 
   try {
     const session = await generateAiSession({
       totalDays: 3,
       windowsPerDay: 2,
       experience: state.profile.experience,
+      onProgress: (msg) => setProgress(msg),
     });
     state.aiSession = session;
     state.aiPowered = true;
@@ -328,10 +334,12 @@ async function loadAiSession(container, state, navigate) {
 }
 
 function aiErrorHtml(message) {
+  const isTimeout = /timeout|504|too long/i.test(message);
   return `
     <section class="card ai-error-card">
       <h2>AI could not build your session</h2>
       <p class="lead">${message}</p>
+      ${isTimeout ? `<p class="muted">The server has a 60-second limit per request. We now build one day at a time — refresh and try again.</p>` : ""}
       <ul class="ai-error-steps">
         <li>Vercel → <strong>tradereval</strong> → Settings → Environment Variables</li>
         <li>Add <code>OPENAI_API_KEY</code> (new key from platform.openai.com)</li>
@@ -387,7 +395,7 @@ function advanceWindow(state) {
   }
 }
 
-function loadingHtml(msg, sub = "This takes 10–30 seconds the first time.") {
+function loadingHtml(msg, sub = "Each day takes ~15–20 seconds. 3-day session ≈ 1 minute total.") {
   return `<section class="card loading-card"><div class="loader"></div><h2>${msg}</h2><p class="muted" id="loading-sub">${sub}</p></section>`;
 }
 
