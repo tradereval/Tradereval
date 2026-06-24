@@ -25,7 +25,7 @@ export function drawChart(canvas, bars, options = {}) {
   const padBot = 36;
   const chartH = h - padTop - padBot;
 
-  ctx.fillStyle = "#0a0d12";
+  ctx.fillStyle = "#0a1628";
   ctx.fillRect(0, 0, w, h);
 
   const highs = slice.map((b) => b.h);
@@ -48,7 +48,7 @@ export function drawChart(canvas, bars, options = {}) {
 
   const yPrice = (p) => padTop + ((top - p) / range) * chartH;
 
-  ctx.strokeStyle = "#1a2233";
+  ctx.strokeStyle = "#1a3050";
   ctx.lineWidth = 1;
   for (let i = 0; i < 5; i++) {
     const y = padTop + (chartH * i) / 4;
@@ -57,7 +57,7 @@ export function drawChart(canvas, bars, options = {}) {
     ctx.lineTo(w - 8, y);
     ctx.stroke();
     const price = top - (range * i) / 4;
-    ctx.fillStyle = "#5c6b80";
+    ctx.fillStyle = "#7a8494";
     ctx.font = "10px JetBrains Mono, ui-monospace, monospace";
     ctx.textAlign = "right";
     ctx.fillText(price.toFixed(1), w - 10, y + 3);
@@ -67,7 +67,7 @@ export function drawChart(canvas, bars, options = {}) {
   if (options.situationLabel) {
     ctx.fillStyle = "#0a0a0ccc";
     ctx.fillRect(8, 6, Math.min(w - 16, options.situationLabel.length * 7 + 24), 20);
-    ctx.fillStyle = "#bfff00";
+    ctx.fillStyle = "#c4a35a";
     ctx.font = "bold 11px system-ui, sans-serif";
     ctx.fillText(options.situationLabel.toUpperCase(), 14, 20);
   }
@@ -87,9 +87,9 @@ export function drawChart(canvas, bars, options = {}) {
     ctx.font = "9px JetBrains Mono, ui-monospace, monospace";
     ctx.fillText(label, 52, y - 3);
   };
-  drawLevel(levels.resistance, "#f59e0b88", "Res");
-  drawLevel(levels.support, "#38bdf888", "Sup");
-  drawLevel(levels.sessionOpen, "#a78bfa66", "Open");
+  drawLevel(levels.resistance, "#b8923a88", "Res");
+  drawLevel(levels.support, "#5a8fb888", "Sup");
+  drawLevel(levels.sessionOpen, "#7a849466", "Open");
 
   const candleW = Math.max(1, Math.min(14, (w - 56) / slice.length - 1));
   const gap = 2;
@@ -100,7 +100,7 @@ export function drawChart(canvas, bars, options = {}) {
     const markerIdx = slice.findIndex((b) => b.t >= options.markerTs);
     if (markerIdx >= 0) {
       const mx = offsetX + markerIdx * (candleW + gap) + candleW / 2;
-      ctx.strokeStyle = "#7acc00";
+      ctx.strokeStyle = "#0066b3";
       ctx.setLineDash([3, 3]);
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -108,7 +108,7 @@ export function drawChart(canvas, bars, options = {}) {
       ctx.lineTo(mx, h - padBot);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = "#bfff00";
+      ctx.fillStyle = "#c4a35a";
       ctx.font = "bold 9px system-ui, sans-serif";
       ctx.fillText((options.sessionLabel || "SESSION").toUpperCase(), mx + 4, padTop + 14);
     }
@@ -116,7 +116,7 @@ export function drawChart(canvas, bars, options = {}) {
 
   const ema = emaValues(slice, Math.min(20, slice.length));
   if (ema.length > 2) {
-    ctx.strokeStyle = "#eab30899";
+    ctx.strokeStyle = "#c4a35a99";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ema.forEach((v, i) => {
@@ -132,14 +132,14 @@ export function drawChart(canvas, bars, options = {}) {
     const x = offsetX + i * (candleW + gap);
     const cx = x + candleW / 2;
     const bull = bar.c >= bar.o;
-    const color = bull ? "#22c55e" : "#ef4444";
+    const color = bull ? "#2d8a62" : "#c45c5c";
     const yHigh = yPrice(bar.h);
     const yLow = yPrice(bar.l);
     const yOpen = yPrice(bar.o);
     const yClose = yPrice(bar.c);
 
     ctx.strokeStyle = color;
-    ctx.fillStyle = bull ? "#0a0d12" : color;
+    ctx.fillStyle = bull ? "#0a1628" : color;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(cx, yHigh);
@@ -167,7 +167,7 @@ export function drawChart(canvas, bars, options = {}) {
   const lastX = offsetX + (slice.length - 1) * (candleW + gap) + candleW / 2;
 
   // decision point — last candle is where you trade
-  ctx.strokeStyle = "#bfff00";
+  ctx.strokeStyle = "#0066b3";
   ctx.setLineDash([4, 3]);
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -175,12 +175,12 @@ export function drawChart(canvas, bars, options = {}) {
   ctx.lineTo(lastX, h - padBot);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle = "#bfff00";
+  ctx.fillStyle = "#0066b3";
   ctx.font = "bold 9px system-ui, sans-serif";
   ctx.fillText("DECISION", lastX - 42, padTop + 12);
 
   ctx.setLineDash([4, 3]);
-  ctx.strokeStyle = "#bfff00";
+  ctx.strokeStyle = "#0066b3";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(48, yLast);
@@ -188,7 +188,7 @@ export function drawChart(canvas, bars, options = {}) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = "#bfff00";
+  ctx.fillStyle = "#0066b3";
   ctx.font = "11px JetBrains Mono, ui-monospace, monospace";
   ctx.textAlign = "right";
   ctx.fillText(last.c.toFixed(2), w - 10, yLast - 5);

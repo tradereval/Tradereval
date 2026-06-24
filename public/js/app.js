@@ -109,7 +109,7 @@ function updateAuthBadge() {
     el.textContent = `${label} · ${auth.user.email.split("@")[0]}`;
     el.className = "auth-badge signed-in";
   } else {
-    el.textContent = "Sign up free";
+    el.textContent = "Create account";
     el.className = "auth-badge";
   }
 }

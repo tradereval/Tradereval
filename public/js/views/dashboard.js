@@ -28,19 +28,19 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Pro-grade trader training</p>
-        <h1>Test your skills.<br/>Then trade like<br/>you mean it.</h1>
+        <p class="eyebrow">Institutional trader assessment</p>
+        <h1>Measure discipline<br/>before <em>capital is at risk</em>.</h1>
         <p class="lead">
-          Most traders blow up because they never practiced under pressure.
-          <strong>TraderEval</strong> puts you on real XAUUSD — NY Open, London, overlap —
-          with <strong>6 timeframes</strong> and an <strong>AI behavior report</strong> that shows
-          exactly where you leak before real money is on the line.
+          Most traders fail not from lack of strategy, but from unmeasured behavior under pressure.
+          <strong>TraderEval</strong> places you on institutional-grade XAUUSD data — NY Open, London, overlap —
+          across <strong>six timeframes</strong>, with an AI behavioral report that quantifies
+          discipline, risk, and execution before live capital is deployed.
         </p>
         <ul class="hero-bullets">
-          <li>Real TradingView gold — not fake AI candles</li>
-          <li>1m · 5m · 15m · 1h · 4h · 1d — full stack on every setup</li>
-          <li>AI shuffles sessions — can't memorize answers</li>
-          <li>Personal report: discipline, risk, psychology</li>
+          <li>TradingView XAUUSD — verified historical OHLC, not synthetic data</li>
+          <li>1m · 5m · 15m · 1h · 4h · 1d — full timeframe stack on every scenario</li>
+          <li>Randomized session selection — eliminates memorization bias</li>
+          <li>Structured report: discipline, risk management, psychological profile</li>
         </ul>
         ${
           !isLoggedIn()
@@ -50,7 +50,7 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
         <div class="hero-actions">
           ${
             !isLoggedIn()
-              ? `<button class="btn primary" data-action="signup">Sign up free — get 1 eval</button>
+              ? `<button class="btn primary" data-action="signup">Create account — begin assessment</button>
                  <button class="btn ghost" data-action="login">Sign in</button>`
               : state.evalComplete
                 ? `<button class="btn primary" data-action="report">View your report</button>
@@ -97,28 +97,28 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
 
     <section class="sell-strip">
       <div class="sell-head">
-        <p class="eyebrow">What you're buying</p>
-        <h2>Not another course.<br/>A <span class="accent-word">pro-grade</span> rehearsal.</h2>
+        <p class="eyebrow">Platform overview</p>
+        <h2>Not a course.<br/>A <span class="accent-word">disciplined rehearsal</span>.</h2>
       </div>
       <div class="sell-grid">
         <article class="sell-item">
           <span class="sell-num">01</span>
-          <h3>Real market reps</h3>
-          <p>Historical XAUUSD at NY &amp; London open. You trade the same charts pros study — not a toy simulator.</p>
+          <h3>Historical market data</h3>
+          <p>XAUUSD at NY and London session opens — the liquidity events institutional desks monitor daily.</p>
         </article>
         <article class="sell-item">
           <span class="sell-num">02</span>
-          <h3>Full timeframe stack</h3>
-          <p>1m through 1D on one setup. See structure like you would on a real platform before you click Long or Short.</p>
+          <h3>Multi-timeframe analysis</h3>
+          <p>One through daily timeframes on a single setup. Structure assessment as practiced on professional platforms.</p>
         </article>
         <article class="sell-item">
           <span class="sell-num">03</span>
-          <h3>AI behavior autopsy</h3>
-          <p>Every eval ends with a report on your decisions — FOMO, revenge, risk sizing — so you fix leaks early.</p>
+          <h3>Behavioral analytics</h3>
+          <p>Each evaluation produces a structured report on decision quality — risk sizing, timing, and emotional bias.</p>
         </article>
         <article class="sell-item sell-cta">
-          <h3>Free eval to start</h3>
-          <p>Sign up. Run your first session. See if you're execution-ready or still gambling.</p>
+          <h3>Complimentary evaluation</h3>
+          <p>Create an account. Complete your first assessment. Review whether your process meets institutional standards.</p>
           ${!isLoggedIn() ? `<button class="btn primary" data-action="signup">Get your free eval</button>` : canEvaluate ? `<button class="btn primary" data-action="start">Start now</button>` : `<button class="btn primary" data-open-wishlist="dashboard">Join waitlist</button>`}
         </article>
       </div>
@@ -126,16 +126,16 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
 
     <section class="grid-3">
       <article class="card highlight-card">
-        <h3>Real XAUUSD</h3>
-        <p>TradingView OHLC at session opens — the moments that actually move gold.</p>
+        <h3>Verified XAUUSD</h3>
+        <p>TradingView OHLC at session opens — the liquidity windows that drive institutional flow.</p>
       </article>
       <article class="card highlight-card">
-        <h3>6 timeframes</h3>
-        <p>M1 → D1 with 24h+ history. One setup, full picture across every timeframe.</p>
+        <h3>Six timeframes</h3>
+        <p>One minute through daily with 24-hour minimum context. Complete structural picture per scenario.</p>
       </article>
       <article class="card highlight-card">
-        <h3>AI-curated days</h3>
-        <p>Shuffled replays + quizzes every run. Train edge, not memory.</p>
+        <h3>Curated scenarios</h3>
+        <p>Randomized replays and structured quizzes each session. Train process, not pattern recall.</p>
       </article>
     </section>
   `;
