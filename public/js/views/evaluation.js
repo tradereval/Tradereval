@@ -1,5 +1,6 @@
 import { loadState, saveState, resetEval } from "../store.js";
-import { drawChart } from "../sim/chart.js";
+import { createLiveChart } from "../sim/chart.js";
+import { prepareChartData, TIMEFRAMES } from "../sim/chart-data.js";
 import { recordAction, generateReport } from "../sim/scoring.js";
 import { hasJoinedWishlist, wireWishlistButtons } from "../wishlist.js";
 import { isLoggedIn } from "../auth.js";
@@ -8,7 +9,6 @@ import {
   getSession,
   getTotalWindows,
   getCurrentWindow,
-  getWindowBar,
   sessionMeta,
 } from "../ai/session.js";
 
@@ -49,7 +49,8 @@ export async function renderEvaluation(container, { navigate }) {
   const { dayCfg, win, session } = current;
   const meta = sessionMeta(state);
   state.currentDay = dayCfg.day;
-  const { bar, bars, lookback, barIndex } = getWindowBar(win, session);
+  const chartData = prepareChartData(win, session);
+  const { bar, bars, lookback, situationLabel, levels } = chartData;
   const hasPosition = !!state.openPosition;
   const quiz = win.quiz;
   const existingQuiz = state.quizAnswers.find((q) => q.windowId === win.id);
@@ -64,6 +65,7 @@ export async function renderEvaluation(container, { navigate }) {
         <p class="narrative">${dayCfg.narrative}</p>
         <div class="window-meta">
           <span class="pill">${win.label}</span>
+          <span class="setup-tag">${situationLabel}</span>
           <p>${win.context}</p>
         </div>
         <ul class="live-stats">
@@ -76,11 +78,32 @@ export async function renderEvaluation(container, { navigate }) {
 
       <section class="eval-main">
         <div class="chart-wrap">
-          <div class="chart-head">
-            <span>${meta.symbol}</span>
-            <span class="mono">${bar.c.toFixed(2)}</span>
+          <div class="chart-toolbar">
+            <div class="chart-toolbar-left">
+              <span class="chart-symbol">${meta.symbol}</span>
+              <div class="tf-tabs" id="tf-tabs">
+                ${TIMEFRAMES.map((tf) => `<button type="button" class="tf-tab ${tf === "M15" ? "active" : ""}" data-tf="${tf}">${tf}</button>`).join("")}
+              </div>
+            </div>
+            <div class="chart-toolbar-right">
+              <span id="chart-live-price" class="mono chart-price">${bar.c.toFixed(2)}</span>
+              <button type="button" class="btn ghost btn-xs" id="chart-skip">Skip replay</button>
+            </div>
           </div>
-          <canvas id="price-chart" height="320"></canvas>
+          <div class="chart-ohlc-row" id="chart-ohlc">
+            <span class="ohlc-item">O <strong>${bar.o.toFixed(2)}</strong></span>
+            <span class="ohlc-item">H <strong>${bar.h.toFixed(2)}</strong></span>
+            <span class="ohlc-item">L <strong>${bar.l.toFixed(2)}</strong></span>
+            <span class="ohlc-item">C <strong class="${bar.c >= bar.o ? "pos" : "neg"}">${bar.c.toFixed(2)}</strong></span>
+          </div>
+          <div class="chart-legend">
+            <span><i class="leg ema"></i> EMA 20</span>
+            <span><i class="leg sup"></i> Support</span>
+            <span><i class="leg res"></i> Resistance</span>
+            <span><i class="leg open"></i> Session open</span>
+          </div>
+          <canvas id="price-chart" height="360"></canvas>
+          <p class="chart-foot muted" id="chart-status">Replaying candles — watch the setup form…</p>
         </div>
 
         ${
@@ -101,9 +124,9 @@ export async function renderEvaluation(container, { navigate }) {
             : ""
         }
 
-        <div class="action-panel card ${quiz && !quizDone ? "disabled-panel" : ""}">
+        <div class="action-panel card ${quiz && !quizDone ? "disabled-panel" : ""}" id="action-panel">
           <h3>Your trade decision</h3>
-          ${quiz && !quizDone ? `<p class="muted">Answer the judgment check first.</p>` : ""}
+          ${quiz && !quizDone ? `<p class="muted">Answer the judgment check first.</p>` : `<p class="muted" id="trade-hint">Watch the chart replay, then decide.</p>`}
           ${
             hasPosition
               ? `<p class="muted">Open ${state.openPosition.dir} position.</p>
@@ -134,9 +157,68 @@ export async function renderEvaluation(container, { navigate }) {
     </div>
   `;
 
+  window.__chartCtrl?.destroy?.();
+  if (window.__chartCtrl?._resize) {
+    window.removeEventListener("resize", window.__chartCtrl._resize);
+  }
+
   const canvas = container.querySelector("#price-chart");
-  const chartIndex = barIndex ?? bars.length - 1;
-  requestAnimationFrame(() => drawChart(canvas, bars, chartIndex, lookback));
+  const actionPanel = container.querySelector("#action-panel");
+  const tradeHint = container.querySelector("#trade-hint");
+  const chartStatus = container.querySelector("#chart-status");
+  const skipBtn = container.querySelector("#chart-skip");
+
+  const setTradingEnabled = (on) => {
+    actionPanel?.classList.toggle("disabled-panel", !on || (quiz && !quizDone));
+    container.querySelectorAll("[data-act]").forEach((btn) => {
+      if (!quiz || quizDone) btn.disabled = !on;
+    });
+    if (tradeHint) {
+      tradeHint.textContent = on
+        ? "Setup is live — enter, pass, or wait."
+        : "Watch the chart replay, then decide.";
+    }
+    if (chartStatus) {
+      chartStatus.textContent = on
+        ? "Live · M15 base timeframe — switch H1/H4/D1 for context."
+        : "Replaying candles — watch the setup form…";
+    }
+    skipBtn?.classList.toggle("hidden", on);
+  };
+
+  setTradingEnabled(false);
+
+  const chartCtrl = createLiveChart(canvas, bars, {
+    lookback,
+    levels,
+    timeframe: "M15",
+    candleMs: 200,
+    onReady: () => setTradingEnabled(!(quiz && !quizDone)),
+  });
+  window.__chartCtrl = chartCtrl;
+
+  skipBtn?.addEventListener("click", () => chartCtrl.skipToEnd());
+
+  if (hasPosition) {
+    chartCtrl.skipToEnd();
+  } else {
+    requestAnimationFrame(() => {
+      chartCtrl.draw();
+      chartCtrl.playReveal();
+    });
+  }
+
+  container.querySelectorAll(".tf-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      container.querySelectorAll(".tf-tab").forEach((t) => t.classList.toggle("active", t === tab));
+      chartCtrl.setTimeframe(tab.dataset.tf);
+    });
+  });
+
+  const onResize = () => chartCtrl.draw();
+  window.addEventListener("resize", onResize);
+  chartCtrl._resize = onResize;
+  chartCtrl.draw();
 
   container.querySelectorAll("[data-quiz]").forEach((btn) => {
     btn.addEventListener("click", () => {
