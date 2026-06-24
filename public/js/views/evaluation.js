@@ -3,7 +3,7 @@ import { createLiveChart } from "../sim/chart.js";
 import { prepareChartData, TIMEFRAMES } from "../sim/chart-data.js";
 import { recordAction, generateReport } from "../sim/scoring.js";
 import { hasJoinedWishlist, wireWishlistButtons } from "../wishlist.js";
-import { isLoggedIn } from "../auth.js";
+import { isLoggedIn, consumeEvalCredit } from "../auth.js";
 import { generateAiSession, evaluateAiSession } from "../ai/client.js";
 import {
   getSession,
