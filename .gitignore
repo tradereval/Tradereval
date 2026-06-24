@@ -1,2 +1,5 @@
 wishlist.json
 users.json
+.env
+.env.*
+!.env.example

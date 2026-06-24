@@ -25,13 +25,29 @@ export function authHeaders() {
     : { "Content-Type": "application/json" };
 }
 
+async function parseJsonResponse(res) {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      res.ok
+        ? "Invalid server response."
+        : text.startsWith("A server error")
+          ? "Server error — sign-up storage may not be configured yet."
+          : text.slice(0, 160)
+    );
+  }
+}
+
 export async function signup({ email, name, password }) {
   const res = await fetch("/api/auth/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, name, password }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error || "Signup failed");
   saveAuth({ token: data.token, user: data.user });
   return data;
@@ -43,7 +59,7 @@ export async function login({ email, password }) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error || "Login failed");
   saveAuth({ token: data.token, user: data.user });
   return data;
@@ -57,7 +73,7 @@ export async function refreshUser() {
   const auth = loadAuth();
   if (!auth?.token) return null;
   const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${auth.token}` } });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) {
     logout();
     return null;
@@ -74,7 +90,7 @@ export async function consumeEvalCredit() {
     headers: authHeaders(),
     body: JSON.stringify({}),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error || "Cannot start evaluation");
   saveAuth({ token: auth.token, user: data.user });
   return data;
@@ -88,7 +104,7 @@ export async function checkEvalCredit() {
     headers: authHeaders(),
     body: JSON.stringify({ checkOnly: true }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) return { canEvaluate: false, user: auth.user };
   if (data.user) saveAuth({ token: auth.token, user: data.user });
   return { canEvaluate: data.canEvaluate, user: data.user };
