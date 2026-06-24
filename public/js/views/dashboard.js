@@ -7,7 +7,6 @@ import {
   loadAuth,
   isLoggedIn,
   openAuthModal,
-  checkEvalCredit,
   refreshUser,
 } from "../auth.js";
 import { fetchAiStatus } from "../ai/client.js";
@@ -129,6 +128,24 @@ export async function startEvaluation(navigate) {
     return;
   }
 
+  const content = document.getElementById("content");
+  const pageTitle = document.getElementById("page-title");
+  document.getElementById("modal")?.classList.add("hidden");
+
+  pageTitle.textContent = "Full Evaluation";
+  document.querySelectorAll(".nav-item").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === "evaluation");
+  });
+
+  if (content) {
+    content.innerHTML = `
+      <section class="card loading-card">
+        <div class="loader"></div>
+        <h2>Starting evaluation…</h2>
+        <p class="muted">Checking AI connection — please wait.</p>
+      </section>`;
+  }
+
   const state = loadState();
   if (state.evalStarted && !state.evalComplete && state.aiSession) {
     navigate("evaluation");
@@ -138,9 +155,15 @@ export async function startEvaluation(navigate) {
   try {
     const aiStatus = await fetchAiStatus();
     if (!aiStatus.configured) {
-      alert(
-        "AI is not connected yet. Add OPENAI_API_KEY in Vercel → Settings → Environment Variables, then Redeploy."
-      );
+      if (content) {
+        content.innerHTML = `
+          <section class="card ai-error-card">
+            <h2>AI not connected</h2>
+            <p class="lead">Add <code>OPENAI_API_KEY</code> in Vercel → Settings → Environment Variables, then redeploy.</p>
+            <button class="btn primary" type="button" id="ai-back-dash">Back to dashboard</button>
+          </section>`;
+        content.querySelector("#ai-back-dash")?.addEventListener("click", () => navigate("dashboard"));
+      }
       return;
     }
 
@@ -152,9 +175,15 @@ export async function startEvaluation(navigate) {
     saveState(s);
     navigate("evaluation");
   } catch (err) {
-    alert(err.message);
-    await checkEvalCredit();
-    navigate("dashboard");
+    if (content) {
+      content.innerHTML = `
+        <section class="card ai-error-card">
+          <h2>Could not start evaluation</h2>
+          <p class="lead">${err.message}</p>
+          <button class="btn primary" type="button" id="ai-back-dash">Back to dashboard</button>
+        </section>`;
+      content.querySelector("#ai-back-dash")?.addEventListener("click", () => navigate("dashboard"));
+    }
   }
 }
 

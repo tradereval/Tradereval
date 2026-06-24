@@ -20,6 +20,11 @@ export async function renderEvaluation(container, { navigate }) {
 
   const state = loadState();
 
+  if (state.evalLoading && !state.aiSession) {
+    state.evalLoading = false;
+    saveState(state);
+  }
+
   if (state.evalComplete) {
     navigate("report");
     return;
@@ -275,6 +280,16 @@ async function loadAiSession(container, state, navigate) {
   saveState(state);
   container.innerHTML = loadingHtml("AI is building your trading scenarios…");
 
+  const subEl = () => container.querySelector("#loading-sub");
+  const progressTimer = setInterval(() => {
+    const el = subEl();
+    if (!el) return;
+    const t = el.dataset.tick ? Number(el.dataset.tick) + 1 : 1;
+    el.dataset.tick = String(t);
+    if (t > 15) el.textContent = "Still working — OpenAI is generating your unique session…";
+    else if (t > 8) el.textContent = "Almost there — building charts and quiz questions…";
+  }, 3000);
+
   try {
     const session = await generateAiSession({
       totalDays: 3,
@@ -289,6 +304,7 @@ async function loadAiSession(container, state, navigate) {
       state.evalCreditConsumed = true;
     }
   } catch (err) {
+    clearInterval(progressTimer);
     console.warn("AI session failed:", err.message);
     state.aiSession = null;
     state.aiPowered = false;
@@ -305,6 +321,7 @@ async function loadAiSession(container, state, navigate) {
     return;
   }
 
+  clearInterval(progressTimer);
   state.evalLoading = false;
   saveState(state);
   renderEvaluation(container, { navigate });
@@ -370,8 +387,8 @@ function advanceWindow(state) {
   }
 }
 
-function loadingHtml(msg) {
-  return `<section class="card loading-card"><div class="loader"></div><h2>${msg}</h2><p class="muted">This takes 10–30 seconds the first time.</p></section>`;
+function loadingHtml(msg, sub = "This takes 10–30 seconds the first time.") {
+  return `<section class="card loading-card"><div class="loader"></div><h2>${msg}</h2><p class="muted" id="loading-sub">${sub}</p></section>`;
 }
 
 export async function renderReport(container, { navigate }) {

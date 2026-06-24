@@ -14,9 +14,24 @@ async function parseJsonResponse(res) {
   }
 }
 
+async function fetchWithTimeout(url, options = {}, ms = 60000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. The server may still be starting — try again in a moment.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchAiStatus() {
   try {
-    const res = await fetch("/api/config");
+    const res = await fetchWithTimeout("/api/config", {}, 10000);
     const data = await parseJsonResponse(res);
     if (!res.ok) return { configured: false, model: null };
     return data;
@@ -26,15 +41,19 @@ export async function fetchAiStatus() {
 }
 
 export async function generateAiSession(options = {}) {
-  const res = await fetch("/api/generate-session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      totalDays: options.totalDays ?? 3,
-      windowsPerDay: options.windowsPerDay ?? 2,
-      experience: options.experience ?? "intermediate",
-    }),
-  });
+  const res = await fetchWithTimeout(
+    "/api/generate-session",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        totalDays: options.totalDays ?? 3,
+        windowsPerDay: options.windowsPerDay ?? 2,
+        experience: options.experience ?? "intermediate",
+      }),
+    },
+    90000
+  );
   const data = await parseJsonResponse(res);
   if (!res.ok) {
     const msg =
@@ -49,11 +68,15 @@ export async function generateAiSession(options = {}) {
 }
 
 export async function evaluateAiSession(payload) {
-  const res = await fetch("/api/evaluate-session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const res = await fetchWithTimeout(
+    "/api/evaluate-session",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    90000
+  );
   const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error || "Could not evaluate session");
   return data;
