@@ -3,7 +3,7 @@ import { createLiveChart } from "../sim/chart.js";
 import { prepareChartData, TIMEFRAMES } from "../sim/chart-data.js";
 import { recordAction, generateReport } from "../sim/scoring.js";
 import { hasJoinedWishlist, wireWishlistButtons } from "../wishlist.js";
-import { isLoggedIn, consumeEvalCredit } from "../auth.js";
+import { isLoggedIn, consumeEvalCredit, loadAuth } from "../auth.js";
 import { generateAiSession, evaluateAiSession } from "../ai/client.js";
 import {
   getSession,
@@ -20,29 +20,28 @@ export async function renderEvaluation(container, { navigate }) {
 
   const state = loadState();
 
-  if (state.evalLoading && !state.aiSession) {
-    state.evalLoading = false;
-    saveState(state);
-  }
-
   if (state.evalComplete) {
     navigate("report");
     return;
   }
 
-  if (!state.evalStarted) {
-    state.evalStarted = true;
-    saveState(state);
-  }
+  if (!state.aiSession) {
+    if (window.__aiLoadActive) {
+      container.innerHTML = loadingHtml(state.aiLoadMessage || "AI is building your trading scenarios…");
+      return;
+    }
 
-  if (!state.aiSession && !state.evalLoading) {
-    await loadAiSession(container, state, navigate);
+    if (!state.evalStarted) {
+      state.evalStarted = true;
+      saveState(state);
+    }
+    await loadAiSession(container, loadState(), navigate);
     return;
   }
 
   if (state.evalLoading) {
-    container.innerHTML = loadingHtml("AI is building your trading scenarios…");
-    return;
+    state.evalLoading = false;
+    saveState(state);
   }
 
   const current = getCurrentWindow(state);
@@ -276,9 +275,14 @@ function handleAction(act, ctx) {
 }
 
 async function loadAiSession(container, state, navigate) {
+  if (window.__aiLoadActive) return;
+
+  window.__aiLoadActive = true;
   state.evalLoading = true;
+  state.aiLoadStartedAt = Date.now();
+  state.aiLoadMessage = "AI is building your trading scenarios…";
   saveState(state);
-  container.innerHTML = loadingHtml("AI is building your trading scenarios…");
+  container.innerHTML = loadingHtml(state.aiLoadMessage);
 
   const subEl = () => container.querySelector("#loading-sub");
   const progressTimer = setInterval(() => {
@@ -291,13 +295,15 @@ async function loadAiSession(container, state, navigate) {
   }, 3000);
 
   const setProgress = (msg) => {
+    state.aiLoadMessage = msg;
+    saveState(state);
     const h2 = container.querySelector(".loading-card h2");
     if (h2) h2.textContent = msg;
   };
 
   try {
     const session = await generateAiSession({
-      totalDays: 3,
+      totalDays: 2,
       windowsPerDay: 2,
       experience: state.profile.experience,
       onProgress: (msg) => setProgress(msg),
@@ -306,11 +312,19 @@ async function loadAiSession(container, state, navigate) {
     state.aiPowered = true;
 
     if (!state.evalCreditConsumed) {
-      await consumeEvalCredit();
-      state.evalCreditConsumed = true;
+      try {
+        await consumeEvalCredit();
+        state.evalCreditConsumed = true;
+      } catch (creditErr) {
+        const unlimited = loadAuth()?.user?.unlimitedEvals;
+        if (!unlimited) throw creditErr;
+        console.warn("Credit consume skipped:", creditErr.message);
+        state.evalCreditConsumed = true;
+      }
     }
   } catch (err) {
     clearInterval(progressTimer);
+    window.__aiLoadActive = false;
     console.warn("AI session failed:", err.message);
     state.aiSession = null;
     state.aiPowered = false;
@@ -321,13 +335,14 @@ async function loadAiSession(container, state, navigate) {
     container.querySelector("#ai-retry")?.addEventListener("click", () => {
       state.evalStarted = true;
       saveState(state);
-      loadAiSession(container, state, navigate);
+      loadAiSession(container, loadState(), navigate);
     });
     container.querySelector("#ai-back")?.addEventListener("click", () => navigate("dashboard"));
     return;
   }
 
   clearInterval(progressTimer);
+  window.__aiLoadActive = false;
   state.evalLoading = false;
   saveState(state);
   renderEvaluation(container, { navigate });
@@ -395,7 +410,7 @@ function advanceWindow(state) {
   }
 }
 
-function loadingHtml(msg, sub = "Each day takes ~15–20 seconds. 3-day session ≈ 1 minute total.") {
+function loadingHtml(msg, sub = "Building Day 1, then Day 2 (~40 seconds total).") {
   return `<section class="card loading-card"><div class="loader"></div><h2>${msg}</h2><p class="muted" id="loading-sub">${sub}</p></section>`;
 }
 

@@ -71,7 +71,7 @@ export async function fetchAiStatus() {
 }
 
 export async function generateAiSession(options = {}) {
-  const totalDays = options.totalDays ?? 3;
+  const totalDays = options.totalDays ?? 2;
   const windowsPerDay = options.windowsPerDay ?? 2;
   const experience = options.experience ?? "intermediate";
   const onProgress = options.onProgress;

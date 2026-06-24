@@ -4,6 +4,16 @@
   "buildCommand": "",
   "installCommand": "",
   "outputDirectory": "public",
+  "headers": [
+    {
+      "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    },
+    {
+      "source": "/index.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    }
+  ],
   "functions": {
     "api/generate-session.js": { "maxDuration": 60 },
     "api/evaluate-session.js": { "maxDuration": 60 }

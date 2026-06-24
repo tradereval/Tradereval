@@ -175,3 +175,11 @@ window.__refreshWishlistUI = async () => {
 navigate("dashboard");
 refreshTopbarWaitlist();
 refreshUser().then(updateAuthBadge);
+
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("Unhandled error:", e.reason);
+  const msg = e.reason?.message || String(e.reason);
+  if (msg && content && !content.querySelector(".ai-error-card")) {
+    showFatalError(msg);
+  }
+});

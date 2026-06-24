@@ -85,15 +85,26 @@ export async function refreshUser() {
 export async function consumeEvalCredit() {
   const auth = loadAuth();
   if (!auth?.token) throw new Error("Sign in required.");
-  const res = await fetch("/api/eval/consume", {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({}),
-  });
-  const data = await parseJsonResponse(res);
-  if (!res.ok) throw new Error(data.error || "Cannot start evaluation");
-  saveAuth({ token: auth.token, user: data.user });
-  return data;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch("/api/eval/consume", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+      signal: controller.signal,
+    });
+    const data = await parseJsonResponse(res);
+    if (!res.ok) throw new Error(data.error || "Cannot start evaluation");
+    saveAuth({ token: auth.token, user: data.user });
+    return data;
+  } catch (err) {
+    if (err.name === "AbortError") throw new Error("Server slow — try again.");
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function checkEvalCredit() {
