@@ -32,7 +32,7 @@ async function fetchWithTimeout(url, options = {}, ms = 60000) {
   }
 }
 
-async function generateOneDay({ dayIndex, totalDays, windowsPerDay, experience, priorContext, seed }) {
+async function generateOneDay({ dayIndex, totalDays, windowsPerDay, experience, priorContext, shuffleSeed, usedReplayIds }) {
   const res = await fetchWithTimeout(
     "/api/generate-session",
     {
@@ -44,7 +44,8 @@ async function generateOneDay({ dayIndex, totalDays, windowsPerDay, experience, 
         windowsPerDay,
         experience,
         priorContext,
-        seed,
+        shuffleSeed,
+        usedReplayIds,
       }),
     },
     55000
@@ -75,10 +76,11 @@ export async function generateAiSession(options = {}) {
   const windowsPerDay = options.windowsPerDay ?? 2;
   const experience = options.experience ?? "intermediate";
   const onProgress = options.onProgress;
-  const seed = options.seed ?? Date.now();
+  const shuffleSeed = options.shuffleSeed ?? Date.now();
 
   const allDays = [];
   let priorContext = "";
+  let usedReplayIds = [];
 
   for (let day = 1; day <= totalDays; day++) {
     onProgress?.(`Building Day ${day} of ${totalDays}…`, day, totalDays);
@@ -88,17 +90,23 @@ export async function generateAiSession(options = {}) {
       windowsPerDay,
       experience,
       priorContext,
-      seed,
+      shuffleSeed,
+      usedReplayIds,
     });
     allDays.push(...chunk.days);
     priorContext = [priorContext, chunk.daySummary].filter(Boolean).join(" ");
+    if (chunk.replayClipIds?.length) {
+      usedReplayIds = [...usedReplayIds, ...chunk.replayClipIds];
+    }
   }
 
   return {
     source: "ai",
     symbol: "XAUUSD",
     totalDays: allDays.length,
+    shuffleSeed,
     days: allDays,
+    generatedAt: Date.now(),
   };
 }
 

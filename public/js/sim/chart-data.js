@@ -1,5 +1,8 @@
 /** Each raw bar ≈ 15 minutes unless aggregated for higher TFs */
 
+import { generatePattern, basePriceForWindow } from "./patterns.js";
+import { pickReplayClip, formatSessionTime } from "./replay-loader.js";
+
 const SITUATION_LABELS = {
   trend_pullback: "Pullback in trend",
   fomo_chase: "Extended move — FOMO risk",
@@ -126,34 +129,65 @@ export function computeLevels(bars, endIndex) {
   };
 }
 
-export function prepareChartData(win, session) {
-  let bars;
-  let barIndex;
-  let lookback = win.lookback || 40;
+export async function prepareChartData(win, session, state = {}) {
+  const situation = win.situation || "trend_pullback";
+  const clip = await pickReplayClip(win);
 
-  if (win.bars?.length) {
-    bars = enrichBarsWithHistory(normalizeBars(win.bars), 52);
-    barIndex = bars.length - 1;
-  } else if (session.bars && win.barIndex != null) {
-    bars = addTimestamps(normalizeBars(session.bars));
-    barIndex = Math.min(win.barIndex, bars.length - 1);
-    lookback = win.lookback || 28;
-  } else {
-    bars = addTimestamps(normalizeBars([]));
-    barIndex = 0;
+  if (clip?.bars?.length) {
+    const bars = normalizeBars(clip.bars);
+    const barIndex = bars.length - 1;
+    const lookback = Math.min(win.lookback || 40, bars.length);
+    const bar = bars[barIndex] ?? bars.at(-1);
+    const levels = computeLevels(bars, barIndex);
+    const markerBar = clip.markerBar ?? Math.floor(bars.length * 0.65);
+
+    return {
+      bar,
+      bars,
+      barIndex,
+      lookback,
+      situation,
+      situationLabel: situationLabel(situation),
+      patternType: clip.sessionKey || win.marketSession,
+      replayDate: clip.date,
+      sessionLabel: clip.sessionLabel,
+      sessionTime: formatSessionTime(bar.t),
+      markerBar,
+      isReplay: true,
+      levels: {
+        ...levels,
+        sessionOpen: bars[markerBar]?.o ?? levels.sessionOpen,
+      },
+    };
   }
 
+  const day = win.day || state.currentDay || 1;
+  const seedKey = `${session?.symbol || "XAUUSD"}-${state.aiSession?.generatedAt || state.profile?.startedAt || ""}-${win.id}`;
+  const base = basePriceForWindow(win, day, hashSeedSimple(seedKey));
+  const patternBars = generatePattern(situation, seedKey, base);
+  const bars = addTimestamps(patternBars, 15, 7 + (day - 1) * 2);
+  const barIndex = bars.length - 1;
+  const lookback = Math.min(win.lookback || 40, bars.length);
   const bar = bars[barIndex] ?? bars.at(-1);
   const levels = computeLevels(bars, barIndex);
+
   return {
     bar,
     bars,
     barIndex,
     lookback,
-    situation: win.situation,
-    situationLabel: situationLabel(win.situation),
+    situation,
+    situationLabel: situationLabel(situation),
+    patternType: situation,
+    isReplay: false,
     levels,
   };
+}
+
+function hashSeedSimple(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h;
 }
 
 export const TIMEFRAMES = ["M15", "H1", "H4", "D1"];

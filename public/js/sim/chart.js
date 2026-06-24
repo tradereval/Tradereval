@@ -71,6 +71,15 @@ export function drawChart(canvas, bars, visibleCount, options = {}) {
   }
   ctx.textAlign = "left";
 
+  // setup type banner
+  if (options.situationLabel) {
+    ctx.fillStyle = "#0f172a99";
+    ctx.fillRect(8, 6, Math.min(w - 16, options.situationLabel.length * 7 + 24), 20);
+    ctx.fillStyle = "#86efac";
+    ctx.font = "bold 11px system-ui, sans-serif";
+    ctx.fillText(options.situationLabel.toUpperCase(), 14, 20);
+  }
+
   // key levels
   const drawLevel = (price, color, label) => {
     if (price == null) return;
@@ -95,6 +104,27 @@ export function drawChart(canvas, bars, visibleCount, options = {}) {
   const gap = 2;
   const chartW = slice.length * (candleW + gap);
   const offsetX = Math.max(48, w - chartW - 12);
+
+  // session open marker (NY / London open vertical line)
+  if (options.isReplay && options.markerBar != null) {
+    const fullLen = aggregated.length;
+    const sliceStart = fullLen - slice.length;
+    const markerInSlice = options.markerBar - sliceStart;
+    if (markerInSlice >= 0 && markerInSlice < slice.length) {
+      const mx = offsetX + markerInSlice * (candleW + gap) + candleW / 2;
+      ctx.strokeStyle = "#c4b5fd";
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(mx, padTop);
+      ctx.lineTo(mx, h - padBot);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#c4b5fd";
+      ctx.font = "bold 9px system-ui, sans-serif";
+      ctx.fillText((options.sessionLabel || "SESSION").toUpperCase(), mx + 4, padTop + 14);
+    }
+  }
 
   // EMA
   const ema = emaValues(aggregated, Math.min(20, aggregated.length));

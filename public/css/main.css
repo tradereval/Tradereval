@@ -769,13 +769,45 @@ body {
 
 .setup-tag {
   display: inline-block;
-  margin: 0.35rem 0 0.5rem;
+  margin: 0.35rem 0.5rem 0.5rem 0;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   font-size: 0.72rem;
   background: #1a2a22;
   color: #86efac;
   border: 1px solid #22543d;
+}
+
+.session-tag {
+  display: inline-block;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  background: #2a1f3d;
+  color: #c4b5fd;
+  border: 1px solid #5b21b6;
+}
+
+.replay-badge {
+  font-size: 0.72rem;
+  color: #c4b5fd;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: #2a1f3d;
+  border: 1px solid #5b21b6;
+}
+
+.pattern-tag {
+  display: inline-block;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  background: #1a2233;
+  color: #93c5fd;
+  border: 1px solid #1e3a5f;
+  text-transform: capitalize;
 }
 
 .btn-xs {

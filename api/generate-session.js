@@ -1,16 +1,32 @@
 const { openaiJson } = require("../lib/openai");
+const { buildReplayMenu, formatMenuForPrompt, resolveReplayPicks } = require("../lib/replay-index");
+
+const SITUATIONS = [
+  "trend_pullback",
+  "fomo_chase",
+  "chop_no_edge",
+  "range_fade",
+  "fake_breakout",
+  "post_loss_pressure",
+  "recovery_setup",
+  "session_end",
+];
+
+const MARKET_SESSIONS = ["ny_open", "london_open", "ny_overlap"];
 
 const SYSTEM = `You are TraderEval's simulation engine for XAUUSD (gold) trader behavior assessment.
-Generate unique, realistic trading scenarios. Never give live buy/sell signals for real money.
+Generate unique trading scenarios. Never give live buy/sell signals for real money.
 Output valid JSON only.
 
-Rules:
-- One continuous price story across days (levels carry forward).
-- Each window: trade decision moment + one psychology/market judgment quiz.
-- bars: exactly 10 OHLC candles {o,h,l,c}, realistic gold 2300-2500, continuous.
-- situation tags: trend_pullback, fomo_chase, chop_no_edge, range_fade, fake_breakout, post_loss_pressure, recovery_setup, session_end
-- Keep narratives and context concise (1-2 sentences each).
-- Quiz: 4 options, short explain (1 sentence).`;
+YOUR MAIN JOB: curate each evaluation from a SHUFFLED menu of real historical replay clips.
+- Pick a different replayClipId for every window (no repeats).
+- Match situation, label, context, and quiz to that clip's character and price action.
+- Vary sessions across windows: ny_open, london_open, ny_overlap.
+- Each window MUST use a DIFFERENT situation tag (no repeats on same day).
+
+Situation tags: trend_pullback, fomo_chase, chop_no_edge, range_fade, fake_breakout, post_loss_pressure, recovery_setup, session_end
+
+Keep narratives and context concise (1-2 sentences). Quiz: 4 options, short explain.`;
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,40 +34,20 @@ function cors(res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-function normalizeBars(bars, fallbackStart = 2350) {
-  if (!Array.isArray(bars) || bars.length < 8) {
-    const out = [];
-    let p = fallbackStart;
-    for (let i = 0; i < 12; i++) {
-      const o = p;
-      const c = p + (Math.random() - 0.48) * 3;
-      const h = Math.max(o, c) + Math.random() * 1.2;
-      const l = Math.min(o, c) - Math.random() * 1.2;
-      out.push({ o: +o.toFixed(2), h: +h.toFixed(2), l: +l.toFixed(2), c: +c.toFixed(2) });
-      p = c;
-    }
-    return out;
-  }
-  return bars.slice(0, 14).map((b) => ({
-    o: Number(b.o),
-    h: Number(b.h),
-    l: Number(b.l),
-    c: Number(b.c),
-  }));
-}
-
-function mapDay(day, di, windowsPerDay) {
+function mapDay(day, di, windowsPerDay, resolvedWindows) {
   return {
     day: day.day || di + 1,
     title: day.title || `Day ${di + 1}`,
     narrative: day.narrative || "",
-    windows: (day.windows || []).slice(0, windowsPerDay).map((w, wi) => ({
+    windows: resolvedWindows.slice(0, windowsPerDay).map((w, wi) => ({
       id: w.id || `d${di + 1}w${wi + 1}`,
-      label: w.label || `Window ${wi + 1}`,
+      label: w.label || "Decision window",
       context: w.context || "",
       situation: w.situation || "trend_pullback",
-      lookback: w.lookback || 22,
-      bars: normalizeBars(w.bars, 2348 + di * 5 + wi),
+      marketSession: w.marketSession || "ny_open",
+      replayClipId: w.replayClipId,
+      replayMeta: w.replayMeta || null,
+      lookback: w.lookback || 36,
       quiz: w.quiz?.question
         ? {
             question: w.quiz.question,
@@ -75,55 +71,70 @@ module.exports = async function handler(req, res) {
     const experience = req.body?.experience || "intermediate";
     const dayIndex = Number(req.body?.dayIndex) || 0;
     const priorContext = String(req.body?.priorContext || "").slice(0, 800);
-    const seed = req.body?.seed || Date.now();
+    const usedReplayIds = Array.isArray(req.body?.usedReplayIds) ? req.body.usedReplayIds : [];
+    const shuffleSeed = Number(req.body?.shuffleSeed) || Date.now();
+
+    const menu = buildReplayMenu({
+      usedIds: usedReplayIds,
+      windowsNeeded: windowsPerDay,
+      seed: shuffleSeed + dayIndex * 997,
+    });
+
+    const menuText = formatMenuForPrompt(menu);
 
     const dayPrompt =
       dayIndex > 0
-        ? `Create ONLY Day ${dayIndex} of ${totalDays} for this XAUUSD evaluation session (${windowsPerDay} decision windows on this day).`
-        : `Create a ${totalDays}-day XAUUSD evaluation session with ${windowsPerDay} decision windows per day.`;
+        ? `Create ONLY Day ${dayIndex} of ${totalDays} (${windowsPerDay} decision windows).`
+        : `Create Day 1 of ${totalDays} (${windowsPerDay} decision windows).`;
 
     const user = `${dayPrompt}
 Trader experience: ${experience}.
-Seed: ${seed}
 ${priorContext ? `Story so far: ${priorContext}` : ""}
+
+SHUFFLED REPLAY MENU — pick one replayClipId per window (never reuse an id):
+${menuText || "(no clips available)"}
+
+Instructions:
+1. Choose ${windowsPerDay} different replayClipIds from the menu above.
+2. Set marketSession to match the clip's session (ny_open / london_open / ny_overlap).
+3. Pick situation + write label/context/quiz that fit that clip's character and session move.
+4. Shuffle your choices — do not pick clips in date order.
 
 Return JSON:
 {
   "symbol": "XAUUSD",
-  "daySummary": "one sentence for continuity to next day",
-  "days": [
-    {
-      "day": ${dayIndex || 1},
-      "title": "Day N — ...",
-      "narrative": "1-2 sentences",
-      "windows": [
-        {
-          "id": "d1w1",
-          "label": "Window 1 — ...",
-          "context": "brief",
-          "situation": "trend_pullback",
-          "lookback": 22,
-          "bars": [{"o":2350,"h":2352,"l":2348,"c":2351}],
-          "quiz": {
-            "question": "judgment question",
-            "options": ["A", "B", "C", "D"],
-            "correctIndex": 0,
-            "explain": "brief"
-          }
-        }
-      ]
-    }
-  ]
+  "daySummary": "one sentence for continuity",
+  "days": [{
+    "day": ${dayIndex || 1},
+    "title": "Day N — ...",
+    "narrative": "1-2 sentences",
+    "windows": [{
+      "id": "d1w1",
+      "replayClipId": "ny_open-2025-07-01",
+      "label": "NY Open — ...",
+      "context": "brief",
+      "situation": "trend_pullback",
+      "marketSession": "ny_open",
+      "lookback": 36,
+      "quiz": { "question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explain": "..." }
+    }]
+  }]
 }`;
 
     const raw = await openaiJson(SYSTEM, user);
-    const days = (raw.days || []).map((day, di) => mapDay(day, dayIndex > 0 ? dayIndex - 1 : di, windowsPerDay));
+    const rawDay = (raw.days || [])[0] || {};
+    const rawWindows = (rawDay.windows || []).slice(0, windowsPerDay);
+    const resolved = resolveReplayPicks(rawWindows, menu, usedReplayIds, shuffleSeed + dayIndex);
+
+    const days = [mapDay(rawDay, dayIndex > 0 ? dayIndex - 1 : 0, windowsPerDay, resolved)];
+    const newClipIds = resolved.map((w) => w.replayClipId).filter(Boolean);
 
     return res.status(200).json({
       source: "ai",
       symbol: raw.symbol || "XAUUSD",
-      totalDays: dayIndex > 0 ? totalDays : days.length || totalDays,
+      totalDays: dayIndex > 0 ? totalDays : totalDays,
       daySummary: raw.daySummary || "",
+      replayClipIds: newClipIds,
       days,
     });
   } catch (err) {
