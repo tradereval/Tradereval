@@ -28,8 +28,8 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Real gold. Real sessions. Real decisions.</p>
-        <h1>Trade XAUUSD like it's live.<br/>No replay gimmicks.</h1>
+        <p class="eyebrow">◆ White-glove trader training</p>
+        <h1>Real gold.<br/>Real edge.<br/>Lambo discipline.</h1>
         <p class="lead">
           <strong>Real TradingView gold data</strong> — NY Open, London, overlap sessions.
           Switch <strong>1m · 5m · 15m · 1h · 4h · 1d</strong> on the same setup.

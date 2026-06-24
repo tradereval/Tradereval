@@ -1,3 +1,4 @@
+import { runSplash } from "./splash.js";
 import { loadState } from "./store.js";
 import { renderDashboard, renderProfile, startEvaluation } from "./views/dashboard.js";
 import { renderEvaluation, renderReport } from "./views/evaluation.js";
@@ -172,9 +173,15 @@ window.__refreshWishlistUI = async () => {
   }
 };
 
-navigate("dashboard");
-refreshTopbarWaitlist();
-refreshUser().then(updateAuthBadge);
+async function boot() {
+  await runSplash();
+  document.getElementById("app")?.classList.remove("app-hidden");
+  navigate("dashboard");
+  refreshTopbarWaitlist();
+  refreshUser().then(updateAuthBadge);
+}
+
+boot();
 
 window.addEventListener("unhandledrejection", (e) => {
   console.error("Unhandled error:", e.reason);

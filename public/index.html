@@ -8,17 +8,31 @@
   <link rel="canonical" href="https://tradereval.com/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css?v=7" />
+  <meta name="theme-color" content="#030303" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/main.css?v=9" />
 </head>
 <body>
-  <div id="app">
+  <div id="splash" class="splash-screen" role="dialog" aria-label="Welcome to TraderEval">
+    <div class="splash-inner">
+      <div class="splash-logo-wrap">
+        <img class="splash-logo" src="assets/logo.svg" width="88" height="88" alt="TraderEval" />
+      </div>
+      <p class="splash-welcome">Welcome</p>
+      <h1 class="splash-title">TraderEval</h1>
+      <p class="splash-tagline">Before you risk — <strong>test your skills</strong></p>
+      <button type="button" class="splash-skip">Enter</button>
+    </div>
+  </div>
+
+  <div id="app" class="app-hidden">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="brand-mark">TE</div>
-        <div>
+        <img class="brand-logo" src="assets/logo.svg" width="48" height="48" alt="" />
+        <div class="brand-text">
           <strong>TraderEval</strong>
-          <span>Evaluation only</span>
+          <span>Train · Execute · Win</span>
         </div>
       </div>
       <nav class="nav" id="main-nav">
@@ -36,7 +50,9 @@
 
     <main class="main">
       <div class="top-tagline">
-        Test your skills before risking your capital — we train you and help you stabilize your execution.
+        <span class="tagline-gem">◆</span>
+        Real XAUUSD · Multi-timeframe charts · Discipline before dollars
+        <span class="tagline-gem">◆</span>
       </div>
       <header class="topbar">
         <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">☰</button>
@@ -59,6 +75,6 @@
     <div class="modal-panel" id="modal-panel"></div>
   </div>
 
-  <script type="module" src="js/app.js?v=11"></script>
+  <script type="module" src="js/app.js?v=13"></script>
 </body>
 </html>
