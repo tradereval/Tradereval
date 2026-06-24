@@ -4,6 +4,8 @@
   "private": true,
   "description": "TraderEval — tradereval.com behavior-based trader evaluation",
   "scripts": {
-    "build:replay": "node scripts/build-replay-clips.js"
+    "build:replay": "node scripts/build-replay-clips.js",
+    "build:gold": "node scripts/build-gold-data.js",
+    "build:data": "node scripts/build-replay-clips.js && node scripts/build-gold-data.js"
   }
 }

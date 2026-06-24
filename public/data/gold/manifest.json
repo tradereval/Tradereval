@@ -1,0 +1,49 @@
+{
+  "symbol": "XAUUSD",
+  "source": "TradingView TVC:GOLD",
+  "builtAt": "2026-06-24T03:25:57.357Z",
+  "timeframes": {
+    "M5": {
+      "file": "m5.json",
+      "minutes": 5,
+      "count": 300,
+      "from": 1780304400,
+      "to": 1780397700
+    },
+    "M15": {
+      "file": "m15.json",
+      "minutes": 15,
+      "count": 21767,
+      "from": 1751320800,
+      "to": 1780398000
+    },
+    "M30": {
+      "file": "m30.json",
+      "minutes": 30,
+      "count": 28576,
+      "from": 1704150000,
+      "to": 1780398000
+    },
+    "H1": {
+      "file": "h1.json",
+      "minutes": 60,
+      "count": 20191,
+      "from": 1672700400,
+      "to": 1780398000
+    },
+    "H4": {
+      "file": "h4.json",
+      "minutes": 240,
+      "count": 17369,
+      "from": 1425654000,
+      "to": 1780394400
+    },
+    "D1": {
+      "file": "d1.json",
+      "minutes": 1440,
+      "count": 3684,
+      "from": 1318370400,
+      "to": 1780351200
+    }
+  }
+}

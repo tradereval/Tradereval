@@ -225,6 +225,15 @@ body {
   margin-top: 0;
 }
 
+.card.highlight-card {
+  border-color: #5b21b6;
+  background: linear-gradient(145deg, #12101a 0%, var(--surface) 100%);
+}
+
+.card.highlight-card h3 {
+  color: #c4b5fd;
+}
+
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -787,6 +796,18 @@ body {
   background: #2a1f3d;
   color: #c4b5fd;
   border: 1px solid #5b21b6;
+}
+
+.real-data-tag {
+  display: inline-block;
+  margin: 0.35rem 0 0.5rem 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  background: #1a2a1a;
+  color: #86efac;
+  border: 1px solid #166534;
+  font-weight: 600;
 }
 
 .replay-badge {

@@ -28,11 +28,12 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
   container.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Test before you risk real capital</p>
-        <h1>Train your execution.<br/>AI builds every scenario.</h1>
+        <p class="eyebrow">Real gold. Real sessions. Real decisions.</p>
+        <h1>Trade XAUUSD like it's live.<br/>No replay gimmicks.</h1>
         <p class="lead">
-          <strong>Test your skills before risking your capital.</strong> We train you and help you stabilize your execution —
-          with <strong>new AI trades and quizzes every evaluation</strong>, so you practice real decisions, not memorized answers.
+          <strong>Real TradingView gold data</strong> — NY Open, London, overlap sessions.
+          Switch <strong>1m · 5m · 15m · 1h · 4h · 1d</strong> on the same setup.
+          AI shuffles historical days and grades your process, not hindsight.
         </p>
         ${
           !isLoggedIn()
@@ -88,17 +89,17 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
     ${wishlistBannerHtml(waitlistCount)}
 
     <section class="grid-3">
-      <article class="card">
-        <h3>Never the same twice</h3>
-        <p>AI generates fresh market situations every time — traders can't cheat by memorizing.</p>
+      <article class="card highlight-card">
+        <h3>Real XAUUSD data</h3>
+        <p>TradingView gold OHLC — NY Open, London, overlap. Not fake candles or random AI bars.</p>
       </article>
-      <article class="card">
-        <h3>Trades + Q&amp;A</h3>
-        <p>Click real decisions on charts, answer judgment questions — AI scores behavior.</p>
+      <article class="card highlight-card">
+        <h3>6 timeframes</h3>
+        <p>1m · 5m · 15m · 1h · 4h · 1d — each with <strong>24h+ of real history</strong> before your decision.</p>
       </article>
-      <article class="card">
-        <h3>AI coaching report</h3>
-        <p>Personalized mistakes and fixes — no manual content updates from us.</p>
+      <article class="card highlight-card">
+        <h3>AI picks the day</h3>
+        <p>Shuffled historical sessions + behavior report. Know your leaks before you risk capital.</p>
       </article>
     </section>
   `;

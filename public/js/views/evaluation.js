@@ -1,7 +1,8 @@
 import { loadState, saveState, resetEval } from "../store.js";
-import { createLiveChart } from "../sim/chart.js";
-import { prepareChartData, TIMEFRAMES } from "../sim/chart-data.js";
+import { createStaticChart } from "../sim/chart.js";
+import { prepareChartMeta, loadChartBars, computeLevels, TIMEFRAMES } from "../sim/chart-data.js";
 import { loadReplayLibrary } from "../sim/replay-loader.js";
+import { preloadGoldData, contextLabel } from "../sim/gold-data.js";
 import { recordAction, generateReport } from "../sim/scoring.js";
 import { hasJoinedWishlist, wireWishlistButtons } from "../wishlist.js";
 import { isLoggedIn, consumeEvalCredit, loadAuth } from "../auth.js";
@@ -54,8 +55,12 @@ export async function renderEvaluation(container, { navigate }) {
   const { dayCfg, win, session } = current;
   const meta = sessionMeta(state);
   state.currentDay = dayCfg.day;
-  const chartData = await prepareChartData(win, session, state);
-  const { bar, bars, lookback, situationLabel, levels } = chartData;
+  const chartMeta = await prepareChartMeta(win);
+  const defaultTf = "M15";
+  let bars = await loadChartBars(defaultTf, chartMeta);
+  const bar = bars.at(-1) || { o: 0, h: 0, l: 0, c: 0 };
+  const levels = computeLevels(bars, bars.length - 1);
+  const { situationLabel } = chartMeta;
   const hasPosition = !!state.openPosition;
   const quiz = win.quiz;
   const existingQuiz = state.quizAnswers.find((q) => q.windowId === win.id);
@@ -71,7 +76,7 @@ export async function renderEvaluation(container, { navigate }) {
         <div class="window-meta">
           <span class="pill">${win.label}</span>
           <span class="setup-tag">${situationLabel}</span>
-          ${chartData.isReplay ? `<span class="session-tag">${chartData.sessionLabel} · ${chartData.replayDate}</span>` : `<span class="pattern-tag">${chartData.patternType?.replace(/_/g, " ") || "setup"}</span>`}
+          ${chartMeta.isReal ? `<span class="session-tag">${chartMeta.sessionLabel} · ${chartMeta.replayDate}</span><span class="real-data-tag">Real XAUUSD</span>` : ""}
           <p>${win.context}</p>
         </div>
         <ul class="live-stats">
@@ -79,7 +84,7 @@ export async function renderEvaluation(container, { navigate }) {
           <li>Decisions <strong>${state.actionLog.length}</strong></li>
           <li>Position <strong>${hasPosition ? state.openPosition.dir.toUpperCase() : "Flat"}</strong></li>
         </ul>
-        <p class="hint">${chartData.isReplay ? "AI picks shuffled real sessions each run — candles replay, then you decide." : "Each window uses a distinct chart pattern."}</p>
+        <p class="hint">Full day of real price action before each decision · switch timeframes · right edge = your entry moment.</p>
       </aside>
 
       <section class="eval-main">
@@ -87,14 +92,13 @@ export async function renderEvaluation(container, { navigate }) {
           <div class="chart-toolbar">
             <div class="chart-toolbar-left">
               <span class="chart-symbol">${meta.symbol}</span>
-              ${chartData.isReplay ? `<span class="replay-badge">${chartData.sessionLabel} · ${chartData.sessionTime} ET</span>` : ""}
+              ${chartMeta.isReal ? `<span class="replay-badge">${chartMeta.sessionLabel} · ${chartMeta.sessionTime} ET</span>` : ""}
               <div class="tf-tabs" id="tf-tabs">
-                ${TIMEFRAMES.map((tf) => `<button type="button" class="tf-tab ${tf === "M15" ? "active" : ""}" data-tf="${tf}">${tf}</button>`).join("")}
+                ${TIMEFRAMES.map((tf) => `<button type="button" class="tf-tab ${tf === defaultTf ? "active" : ""}" data-tf="${tf}">${tf}</button>`).join("")}
               </div>
             </div>
             <div class="chart-toolbar-right">
               <span id="chart-live-price" class="mono chart-price">${bar.c.toFixed(2)}</span>
-              <button type="button" class="btn ghost btn-xs" id="chart-skip">Skip replay</button>
             </div>
           </div>
           <div class="chart-ohlc-row" id="chart-ohlc">
@@ -110,7 +114,7 @@ export async function renderEvaluation(container, { navigate }) {
             <span><i class="leg open"></i> Session open</span>
           </div>
           <canvas id="price-chart" height="360"></canvas>
-          <p class="chart-foot muted" id="chart-status">Replaying candles — watch the setup form…</p>
+          <p class="chart-foot muted" id="chart-status">${chartMeta.isReal ? `Real TVC:GOLD · ${defaultTf} · ${contextLabel(defaultTf)} · ${chartMeta.replayDate}` : "Multi-timeframe chart — 24h+ context before you trade."}</p>
         </div>
 
         ${
@@ -133,7 +137,7 @@ export async function renderEvaluation(container, { navigate }) {
 
         <div class="action-panel card ${quiz && !quizDone ? "disabled-panel" : ""}" id="action-panel">
           <h3>Your trade decision</h3>
-          ${quiz && !quizDone ? `<p class="muted">Answer the judgment check first.</p>` : `<p class="muted" id="trade-hint">Watch the chart replay, then decide.</p>`}
+          ${quiz && !quizDone ? `<p class="muted">Answer the judgment check first.</p>` : `<p class="muted" id="trade-hint">Analyze the chart — then enter, pass, or wait.</p>`}
           ${
             hasPosition
               ? `<p class="muted">Open ${state.openPosition.dir} position.</p>
@@ -173,67 +177,39 @@ export async function renderEvaluation(container, { navigate }) {
   const actionPanel = container.querySelector("#action-panel");
   const tradeHint = container.querySelector("#trade-hint");
   const chartStatus = container.querySelector("#chart-status");
-  const skipBtn = container.querySelector("#chart-skip");
 
-  const setTradingEnabled = (on) => {
-    actionPanel?.classList.toggle("disabled-panel", !on || (quiz && !quizDone));
-    container.querySelectorAll("[data-act]").forEach((btn) => {
-      if (!quiz || quizDone) btn.disabled = !on;
-    });
-    if (tradeHint) {
-      tradeHint.textContent = on
-        ? "Setup is live — enter, pass, or wait."
-        : "Watch the chart replay, then decide.";
-    }
-    if (chartStatus) {
-      chartStatus.textContent = on
-        ? chartData.isReplay
-          ? `Live replay · ${chartData.sessionLabel} — decide when ready.`
-          : "Live · M15 base timeframe — switch H1/H4/D1 for context."
-        : chartData.isReplay
-          ? `Replaying ${chartData.sessionLabel} candles…`
-          : "Replaying candles — watch the setup form…";
-    }
-    skipBtn?.classList.toggle("hidden", on);
-  };
+  const tradingReady = !(quiz && !quizDone);
+  actionPanel?.classList.toggle("disabled-panel", !tradingReady);
 
-  setTradingEnabled(false);
-
-  const chartCtrl = createLiveChart(canvas, bars, {
-    lookback,
+  const chartCtrl = createStaticChart(canvas, bars, {
+    lookback: bars.length,
     levels,
     situationLabel,
-    markerBar: chartData.markerBar,
-    isReplay: chartData.isReplay,
-    sessionLabel: chartData.sessionLabel,
-    timeframe: "M15",
-    candleMs: 200,
-    onReady: () => setTradingEnabled(!(quiz && !quizDone)),
+    markerTs: chartMeta.markerTs,
+    sessionLabel: chartMeta.sessionLabel,
+    timeframe: defaultTf,
   });
   window.__chartCtrl = chartCtrl;
 
-  skipBtn?.addEventListener("click", () => chartCtrl.skipToEnd());
-
-  if (hasPosition) {
-    chartCtrl.skipToEnd();
-  } else {
-    requestAnimationFrame(() => {
-      chartCtrl.draw();
-      chartCtrl.playReveal();
-    });
-  }
-
   container.querySelectorAll(".tf-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
+    tab.addEventListener("click", async () => {
+      const tf = tab.dataset.tf;
       container.querySelectorAll(".tf-tab").forEach((t) => t.classList.toggle("active", t === tab));
-      chartCtrl.setTimeframe(tab.dataset.tf);
+      tab.disabled = true;
+      const tfBars = await loadChartBars(tf, chartMeta);
+      tab.disabled = false;
+      if (tfBars.length) {
+        chartCtrl.setBars(tfBars, tf);
+        if (chartStatus) {
+          chartStatus.textContent = `Real TVC:GOLD · ${tf} · ${contextLabel(tf)} · ${chartMeta.replayDate || ""}`;
+        }
+      }
     });
   });
 
   const onResize = () => chartCtrl.draw();
   window.addEventListener("resize", onResize);
   chartCtrl._resize = onResize;
-  chartCtrl.draw();
 
   container.querySelectorAll("[data-quiz]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -319,7 +295,7 @@ async function loadAiSession(container, state, navigate) {
       experience: state.profile.experience,
       onProgress: (msg) => setProgress(msg),
     });
-    const [, session] = await Promise.all([loadReplayLibrary(), sessionPromise]);
+    const [, , session] = await Promise.all([loadReplayLibrary(), preloadGoldData(), sessionPromise]);
     state.aiSession = session;
     state.aiPowered = true;
 
