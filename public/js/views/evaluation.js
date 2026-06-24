@@ -282,16 +282,51 @@ async function loadAiSession(container, state, navigate) {
       experience: state.profile.experience,
     });
     state.aiSession = session;
-    state.aiPowered = session.source === "ai";
+    state.aiPowered = true;
+
+    if (!state.evalCreditConsumed) {
+      await consumeEvalCredit();
+      state.evalCreditConsumed = true;
+    }
   } catch (err) {
-    console.warn("AI session fallback:", err.message);
+    console.warn("AI session failed:", err.message);
     state.aiSession = null;
     state.aiPowered = false;
+    state.evalLoading = false;
+    state.evalStarted = false;
+    saveState(state);
+    container.innerHTML = aiErrorHtml(err.message);
+    container.querySelector("#ai-retry")?.addEventListener("click", () => {
+      state.evalStarted = true;
+      saveState(state);
+      loadAiSession(container, state, navigate);
+    });
+    container.querySelector("#ai-back")?.addEventListener("click", () => navigate("dashboard"));
+    return;
   }
 
   state.evalLoading = false;
   saveState(state);
   renderEvaluation(container, { navigate });
+}
+
+function aiErrorHtml(message) {
+  return `
+    <section class="card ai-error-card">
+      <h2>AI could not build your session</h2>
+      <p class="lead">${message}</p>
+      <ul class="ai-error-steps">
+        <li>Vercel → <strong>tradereval</strong> → Settings → Environment Variables</li>
+        <li>Add <code>OPENAI_API_KEY</code> (new key from platform.openai.com)</li>
+        <li>Deployments → <strong>Redeploy</strong></li>
+        <li>Refresh and try again — your free eval credit is <strong>not used</strong> until AI succeeds</li>
+      </ul>
+      <div class="btn-row">
+        <button class="btn primary" id="ai-retry">Try again</button>
+        <button class="btn ghost" id="ai-back">Back to dashboard</button>
+      </div>
+    </section>
+  `;
 }
 
 async function finishEvaluation(state, navigate) {

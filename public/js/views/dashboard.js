@@ -10,10 +10,12 @@ import {
   consumeEvalCredit,
   checkEvalCredit,
 } from "../auth.js";
+import { fetchAiStatus } from "../ai/client.js";
 
 export async function renderDashboard(container, { navigate }, waitlistCount = null) {
   const state = loadState();
   const auth = loadAuth();
+  const aiStatus = await fetchAiStatus();
   const totalWindows = getTotalWindows(state) || 6;
   const progress = state.evalComplete
     ? 100
@@ -68,6 +70,12 @@ export async function renderDashboard(container, { navigate }, waitlistCount = n
       </div>
     </section>
 
+    ${
+      aiStatus.configured
+        ? `<section class="ai-status-banner connected"><span class="ai-dot"></span> AI engine connected · scenarios &amp; reports powered by OpenAI (${aiStatus.model || "gpt-4o-mini"})</section>`
+        : `<section class="ai-status-banner offline"><span class="ai-dot"></span> <strong>AI not connected.</strong> Add <code>OPENAI_API_KEY</code> in Vercel → redeploy. Evaluations will not start until AI is live.</section>`
+    }
+
     ${wishlistBannerHtml(waitlistCount)}
 
     <section class="grid-3">
@@ -112,19 +120,24 @@ export async function startEvaluation(navigate) {
   }
 
   const state = loadState();
-  if (state.evalStarted && !state.evalComplete && state.evalCreditConsumed) {
+  if (state.evalStarted && !state.evalComplete && state.aiSession) {
     navigate("evaluation");
     return;
   }
 
   try {
-    if (!state.evalCreditConsumed) {
-      await consumeEvalCredit();
+    const aiStatus = await fetchAiStatus();
+    if (!aiStatus.configured) {
+      alert(
+        "AI is not connected yet. Add OPENAI_API_KEY in Vercel → Settings → Environment Variables, then Redeploy."
+      );
+      return;
     }
+
     resetEval();
     const s = loadState();
     s.evalStarted = true;
-    s.evalCreditConsumed = true;
+    s.evalCreditConsumed = false;
     s.profile.startedAt = new Date().toISOString();
     saveState(s);
     navigate("evaluation");

@@ -605,6 +605,55 @@ body {
   padding-top: 0.75rem;
 }
 
+.ai-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.ai-status-banner.connected {
+  background: #0f1f18;
+  border-color: #22543d;
+  color: #86efac;
+}
+
+.ai-status-banner.offline {
+  background: #1f1510;
+  border-color: #7c2d12;
+  color: #fdba74;
+}
+
+.ai-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connected .ai-dot { background: #22c55e; }
+.offline .ai-dot { background: #f97316; }
+
+.ai-error-card {
+  max-width: 640px;
+  margin: 2rem auto;
+}
+
+.ai-error-steps {
+  margin: 1rem 0 1.25rem;
+  padding-left: 1.25rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.ai-error-steps code {
+  font-size: 0.85em;
+}
+
 .chart-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
